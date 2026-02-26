@@ -10,9 +10,22 @@
 		8DC8A4DF2F1C9E3B00B2E249 /* AmberApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AmberApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		8DC8A4F02F1C9E3B00B2E249 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8DC8A4DE2F1C9E3B00B2E249 /* AmberApp */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8DC8A4E12F1C9E3B00B2E249 /* AmberApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8DC8A4F02F1C9E3B00B2E249 /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
 			path = AmberApp;
 			sourceTree = "<group>";
 		};

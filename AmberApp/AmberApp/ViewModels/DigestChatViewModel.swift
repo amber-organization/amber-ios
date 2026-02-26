@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import Combine
 
 @MainActor
 class DigestChatViewModel: ObservableObject {
