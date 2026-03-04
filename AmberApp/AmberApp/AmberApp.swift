@@ -10,6 +10,7 @@ import SwiftUI
 @main
 struct AmberApp: App {
     @StateObject var authViewModel = AuthViewModel()
+    @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding = false
 
     var body: some Scene {
         WindowGroup {
@@ -24,9 +25,14 @@ struct AmberApp: App {
                 } else if !authViewModel.isAuthenticated {
                     LoginView()
                         .environmentObject(authViewModel)
+                } else if !hasCompletedOnboarding {
+                    OnboardingContainerView {
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.85)) {
+                            hasCompletedOnboarding = true
+                        }
+                    }
+                    .environmentObject(authViewModel)
                 } else {
-                    // TODO: Add onboarding check here
-                    // if !onboarded { OnboardingContainerView() } else { ContentView() }
                     ContentView()
                         .environmentObject(authViewModel)
                 }
