@@ -122,6 +122,7 @@ export const userProfiles = pgTable('user_profiles', {
   id: serial('id').primaryKey(),
   userId: integer('user_id').references(() => users.id).notNull().unique(),
   displayName: varchar('display_name', { length: 100 }),
+  username: varchar('username', { length: 50 }).unique(),
   birthday: timestamp('birthday', { withTimezone: true }).notNull(),
   birthdayTime: varchar('birthday_time', { length: 10 }),
   birthLocation: varchar('birth_location', { length: 255 }),

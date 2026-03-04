@@ -40,6 +40,7 @@ class AuthViewModel: ObservableObject {
 
                 _ = credentialsManager.store(credentials: credentials)
                 accessToken = credentials.accessToken
+                APIClient.shared.accessToken = credentials.accessToken
                 isAuthenticated = true
                 isLoading = false
             } catch WebAuthError.userCancelled {
@@ -65,6 +66,7 @@ class AuthViewModel: ObservableObject {
 
                 _ = credentialsManager.store(credentials: credentials)
                 accessToken = credentials.accessToken
+                APIClient.shared.accessToken = credentials.accessToken
                 isAuthenticated = true
                 isLoading = false
             } catch WebAuthError.userCancelled {
@@ -86,12 +88,14 @@ class AuthViewModel: ObservableObject {
                 try await webAuth.clearSession()
                 _ = credentialsManager.clear()
                 accessToken = nil
+                APIClient.shared.accessToken = nil
                 isAuthenticated = false
                 isLoading = false
             } catch {
                 // Clear local state even if remote logout fails
                 _ = credentialsManager.clear()
                 accessToken = nil
+                APIClient.shared.accessToken = nil
                 isAuthenticated = false
                 isLoading = false
             }
@@ -111,6 +115,7 @@ class AuthViewModel: ObservableObject {
             do {
                 let credentials = try await credentialsManager.credentials()
                 accessToken = credentials.accessToken
+                APIClient.shared.accessToken = credentials.accessToken
                 isAuthenticated = true
                 isLoading = false
             } catch {

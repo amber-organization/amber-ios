@@ -14,6 +14,7 @@ class OnboardingViewModel: ObservableObject {
 
     // MARK: - User Data
     @Published var displayName: String = ""
+    @Published var username: String = ""
     @Published var birthday: Date?
     @Published var birthdayTime: Date?
     @Published var birthLocation: String = ""
@@ -33,6 +34,13 @@ class OnboardingViewModel: ObservableObject {
     // MARK: - State
     @Published var isLoading: Bool = false
     @Published var error: String?
+
+    private let api = APIClient.shared
+    private let dateFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
 
     // MARK: - Derived
     var derivedHoroscope: HoroscopeSign? {
@@ -67,6 +75,7 @@ class OnboardingViewModel: ObservableObject {
     func submitCurrentStep() {
         error = nil
 
+        // Validate locally first
         switch currentStep {
         case .basics:
             guard !displayName.trimmingCharacters(in: .whitespaces).isEmpty else {
@@ -87,14 +96,100 @@ class OnboardingViewModel: ObservableObject {
             break
         }
 
-        // Store data locally for now — API integration later
+        // Save locally as fallback
         saveProfileLocally()
-        nextStep()
+
+        // Submit to API
+        let stepName = apiStepName(for: currentStep)
+        let stepData = buildStepData(for: currentStep)
+
+        if let stepName, let stepData {
+            isLoading = true
+            Task {
+                do {
+                    _ = try await api.submitOnboardingStep(step: stepName, data: stepData)
+                    isLoading = false
+                    nextStep()
+                } catch {
+                    // API failed — continue with local data, don't block navigation
+                    isLoading = false
+                    self.error = nil
+                    nextStep()
+                }
+            }
+        } else {
+            nextStep()
+        }
     }
 
     func completeOnboarding() {
         saveProfileLocally()
         UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+
+        Task {
+            do {
+                _ = try await api.completeOnboarding()
+            } catch {
+                // Onboarding still completes locally even if API fails
+            }
+        }
+    }
+
+    // MARK: - API Step Mapping
+
+    private func apiStepName(for step: OnboardingStep) -> String? {
+        switch step {
+        case .basics: return "basics"
+        case .birthday: return "birthday"
+        case .location: return "location"
+        case .education: return "education"
+        case .permissions: return "permissions"
+        case .privacyTier: return "privacy_tier"
+        case .welcome, .complete: return nil
+        }
+    }
+
+    private func buildStepData(for step: OnboardingStep) -> [String: Any]? {
+        switch step {
+        case .basics:
+            return ["displayName": displayName, "username": username]
+
+        case .birthday:
+            var data: [String: Any] = ["birthday": dateFormatter.string(from: birthday!)]
+            if let birthdayTime {
+                let timeFormatter = DateFormatter()
+                timeFormatter.dateFormat = "HH:mm"
+                data["birthdayTime"] = timeFormatter.string(from: birthdayTime)
+            }
+            if !birthLocation.isEmpty {
+                data["birthLocation"] = birthLocation
+            }
+            return data
+
+        case .location:
+            var data: [String: Any] = ["currentCity": currentCity]
+            if !hometown.isEmpty {
+                data["hometown"] = hometown
+            }
+            return data
+
+        case .education:
+            return ["almaMater": almaMater.isEmpty ? nil : almaMater].compactMapValues { $0 }
+
+        case .permissions:
+            return [
+                "contacts": contactsPermission,
+                "location": locationPermission,
+                "healthKit": healthKitPermission,
+                "calendar": calendarPermission
+            ]
+
+        case .privacyTier:
+            return ["tier": selectedPrivacyTier]
+
+        case .welcome, .complete:
+            return nil
+        }
     }
 
     // MARK: - Local Storage

@@ -15,6 +15,13 @@
       "when": 1772594253386,
       "tag": "0001_needy_blade",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772646163373,
+      "tag": "0002_groovy_mercury",
+      "breakpoints": true
     }
   ]
 }

@@ -13,6 +13,7 @@ const VALID_STEPS = ['basics', 'birthday', 'location', 'education', 'permissions
 const stepSchemas = {
   basics: z.object({
     displayName: z.string().min(1),
+    username: z.string().min(3).max(50),
   }),
   birthday: z.object({
     birthday: z.string(), // ISO date
@@ -112,9 +113,11 @@ export async function registerOnboardingRoutes(app: FastifyInstance) {
       // Build profile update values based on step
       let profileUpdate: Record<string, any> = {};
       switch (stepName) {
-        case 'basics':
-          profileUpdate = { displayName: (body as z.infer<typeof stepSchemas.basics>).displayName };
+        case 'basics': {
+          const b = body as z.infer<typeof stepSchemas.basics>;
+          profileUpdate = { displayName: b.displayName, username: b.username };
           break;
+        }
         case 'birthday': {
           const b = body as z.infer<typeof stepSchemas.birthday>;
           profileUpdate = { birthday: new Date(b.birthday), birthdayTime: b.birthdayTime, birthLocation: b.birthLocation };

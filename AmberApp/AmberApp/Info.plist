@@ -25,7 +25,7 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.amber.app.auth0</string>
+				<string>com.Amber.AmberApp</string>
 			</array>
 		</dict>
 	</array>
