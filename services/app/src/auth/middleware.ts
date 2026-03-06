@@ -53,7 +53,7 @@ export async function authenticate(
  */
 export async function optionalAuth(
   request: AuthenticatedRequest,
-  reply: FastifyReply,
+  _reply: FastifyReply,
 ): Promise<void> {
   const authHeader = request.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {

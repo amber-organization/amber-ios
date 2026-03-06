@@ -23,7 +23,7 @@ export async function registerPipelineRoutes(app: FastifyInstance) {
    * POST /pipelines/run
    * Run a pipeline (for authenticated user)
    */
-  app.post('/pipelines/run', { preHandler: authenticate }, async (req: AuthenticatedRequest, reply) => {
+  app.post('/pipelines/run', { preHandler: authenticate }, async (req: AuthenticatedRequest, _reply) => {
     const body = PipelineSchema.parse(req.body);
     const { input, ...def } = body;
     
