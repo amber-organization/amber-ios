@@ -35,7 +35,7 @@ export function verifyAuth0Token(token: string): Promise<Auth0TokenPayload> {
       token,
       getKey,
       {
-        audience: `https://${config.auth0.domain}/userinfo`,
+        audience: 'https://api.amber.app',
         issuer: `https://${config.auth0.domain}/`,
         algorithms: ['RS256'],
       },
