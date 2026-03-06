@@ -89,6 +89,7 @@ export async function authenticateAuth0(
     request.userId = user.id;
     request.auth0UserId = auth0UserId;
   } catch (error: any) {
+    console.error('Auth0 verify error:', error);
     reply.code(401).send({ error: 'unauthorized', message: error?.message || 'Invalid token' });
     return;
   }
