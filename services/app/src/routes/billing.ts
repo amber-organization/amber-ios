@@ -59,7 +59,7 @@ export async function registerBillingRoutes(app: FastifyInstance) {
     };
 
     const priceId = PRICES[priceKey];
-    if (!priceId) return reply.code(400).send({ error: `Unknown price: ${priceKey}` });
+    if (!priceId) return reply.code(400).send({ error: 'unknown_price' });
 
     if (!isAllowedRedirectUrl(successUrl)) {
       return reply.code(400).send({ error: 'Invalid successUrl' });

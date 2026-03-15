@@ -12,8 +12,8 @@ const MemoryCreateSchema = z.object({
 });
 
 const MemoryUpdateSchema = z.object({
-  status: z.string().optional(),
-  tags: z.array(z.string()).optional(),
+  status: z.string().max(50).optional(),
+  tags: z.array(z.string().max(100)).max(50).optional(),
 });
 
 export async function registerMemoryRoutes(app: FastifyInstance) {

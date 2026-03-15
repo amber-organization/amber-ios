@@ -30,7 +30,7 @@ const FieldPermissionSchema = z.object({
 });
 
 const BulkPermissionsSchema = z.object({
-  permissions: z.array(FieldPermissionSchema),
+  permissions: z.array(FieldPermissionSchema).max(VALID_FIELDS.length),
 });
 
 async function auditPermissionChange(
@@ -202,7 +202,7 @@ export async function requireFieldPermission(userId: number, fieldType: FieldTyp
       .limit(1);
     if (!perm?.syncEnabled) {
       throw Object.assign(
-        new Error(`Field sync blocked: '${fieldType}' is not enabled for this user`),
+        new Error('Field sync blocked: field not enabled for this user'),
         { statusCode: 403 },
       );
     }

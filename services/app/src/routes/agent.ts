@@ -13,11 +13,24 @@
  *   GET   /agent/tasks/:id/approve — approve a pending task via magic link
  */
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { db, schema } from '../db/client.js';
 import { eq, desc, and } from 'drizzle-orm';
 import { authenticate, AuthenticatedRequest } from '../auth/middleware.js';
 import { sendLoopMessage } from './webhooks.js';
 import crypto from 'crypto';
+
+const AgentTaskPatchSchema = z.object({
+  status: z.string().max(50).optional(),
+  plan: z.string().max(20000).optional(),
+  steps: z.any().optional(),
+  result: z.string().max(20000).optional(),
+  errorMessage: z.string().max(2000).optional(),
+  approvalRequired: z.boolean().optional(),
+  approvalPrompt: z.string().max(1000).optional(),
+  approvedAt: z.string().optional(),
+  completedAt: z.string().optional(),
+}).strict();
 
 const AGENT_SECRET = process.env.AMBER_AGENT_SECRET;
 const APP_BASE_URL = process.env.APP_BASE_URL || 'https://amber.health';
@@ -174,13 +187,15 @@ export async function registerAgentRoutes(app: FastifyInstance) {
       const taskId = parseInt(req.params.id, 10);
       if (isNaN(taskId)) return reply.code(400).send({ error: 'invalid task id' });
 
-      const updates = req.body as Record<string, any>;
+      const parseResult = AgentTaskPatchSchema.safeParse(req.body);
+      if (!parseResult.success) return reply.code(400).send({ error: 'invalid_body' });
+      const updates = parseResult.data;
 
       // Whitelist updatable fields
-      const allowed = ['status', 'plan', 'steps', 'result', 'errorMessage', 'approvalRequired', 'approvalPrompt', 'approvedAt', 'completedAt'];
+      const allowed = ['status', 'plan', 'steps', 'result', 'errorMessage', 'approvalRequired', 'approvalPrompt', 'approvedAt', 'completedAt'] as const;
       const safeUpdates: Record<string, any> = { updatedAt: new Date() };
       for (const key of allowed) {
-        if (key in updates) safeUpdates[key] = updates[key];
+        if (key in updates) safeUpdates[key] = updates[key as keyof typeof updates];
       }
 
       // Auto-set completedAt when status transitions to terminal
@@ -202,7 +217,7 @@ export async function registerAgentRoutes(app: FastifyInstance) {
         if (phone) {
           const token = await generateApprovalToken(task.id, task.userId);
           const approveUrl = `${APP_BASE_URL}/approve?token=${token}`;
-          const message = `Amber needs your approval:\n\n${updates.approvalPrompt}\n\nApprove: ${approveUrl}`;
+          const message = `Amber needs your approval:\n\n${(updates.approvalPrompt ?? '').slice(0, 1000)}\n\nApprove: ${approveUrl}`;
           await sendLoopMessage(phone, message).catch(() => {});
         }
       }
@@ -224,6 +239,7 @@ export async function registerAgentRoutes(app: FastifyInstance) {
     };
 
     if (!userId || !text) return reply.code(400).send({ error: 'userId and text required' });
+    if (!Number.isInteger(userId) || userId <= 0) return reply.code(400).send({ error: 'invalid userId' });
     if (typeof text === 'string' && text.length > 4000) return reply.code(400).send({ error: 'text too long' });
 
     if (channel === 'imessage') {
@@ -262,6 +278,7 @@ export async function registerAgentRoutes(app: FastifyInstance) {
     };
 
     if (!userId || !briefText) return reply.code(400).send({ error: 'userId and briefText required' });
+    if (!Number.isInteger(userId) || userId <= 0) return reply.code(400).send({ error: 'invalid userId' });
     if (typeof briefText === 'string' && briefText.length > 10000) return reply.code(400).send({ error: 'briefText too long' });
 
     // Store brief as an agent task for the record

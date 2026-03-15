@@ -63,20 +63,20 @@ const VALID_STEPS = ['basics', 'birthday', 'location', 'education', 'permissions
 
 const stepSchemas = {
   basics: z.object({
-    displayName: z.string().min(1),
+    displayName: z.string().min(1).max(100),
     username: z.string().min(3).max(50),
   }),
   birthday: z.object({
-    birthday: z.string(), // ISO date
-    birthdayTime: z.string().optional(),
-    birthLocation: z.string().optional(),
+    birthday: z.string().max(30), // ISO date
+    birthdayTime: z.string().max(50).optional(),
+    birthLocation: z.string().max(100).optional(),
   }),
   location: z.object({
-    hometown: z.string().optional(),
-    currentCity: z.string().min(1),
+    hometown: z.string().max(100).optional(),
+    currentCity: z.string().min(1).max(100),
   }),
   education: z.object({
-    almaMater: z.string().optional(),
+    almaMater: z.string().max(100).optional(),
   }),
   permissions: z.object({
     contacts: z.boolean(),
@@ -131,7 +131,7 @@ export async function registerOnboardingRoutes(app: FastifyInstance) {
       const { stepName } = req.params as { stepName: string };
 
       if (!VALID_STEPS.includes(stepName as any)) {
-        return reply.code(400).send({ error: 'invalid_step', message: `Invalid step: ${stepName}` });
+        return reply.code(400).send({ error: 'invalid_step' });
       }
 
       const stepSchema = stepSchemas[stepName as keyof typeof stepSchemas];
@@ -336,7 +336,7 @@ export async function registerOnboardingRoutes(app: FastifyInstance) {
     const { phone, priceKey, successUrl, cancelUrl, email, name } = parsed.data;
 
     const priceId = WEB_PRICES[priceKey];
-    if (!priceId) return reply.code(400).send({ error: `Unknown plan: ${priceKey}` });
+    if (!priceId) return reply.code(400).send({ error: 'unknown_plan' });
 
     if (!isAllowedRedirectUrl(successUrl)) {
       return reply.code(400).send({ error: 'Invalid successUrl' });

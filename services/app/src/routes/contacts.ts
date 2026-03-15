@@ -5,13 +5,14 @@ import { eq, or, and } from 'drizzle-orm';
 import { authenticate, AuthenticatedRequest } from '../auth/middleware.js';
 
 const PersonCreateSchema = z.object({
-  name: z.string().min(1),
-  dob: z.string().optional(),
+  name: z.string().min(1).max(200),
+  dob: z.string().max(30).optional(),
   email: z.string().email().optional(),
   wallets: z
-    .array(z.object({ chain: z.literal('solana'), address: z.string().min(20) }))
+    .array(z.object({ chain: z.literal('solana'), address: z.string().min(20).max(256) }))
+    .max(10)
     .optional(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string().max(500)).optional(),
 });
 
 const RelationshipCreateSchema = z.object({

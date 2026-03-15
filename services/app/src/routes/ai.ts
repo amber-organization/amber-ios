@@ -40,7 +40,7 @@ export async function registerAiRoutes(app: FastifyInstance) {
       .limit(HISTORY_WINDOW);
 
     const memoryContext = memories.length > 0
-      ? memories.map((m) => `- ${m.summary ?? m.rawContent}`).join('\n')
+      ? memories.map((m) => `- ${(m.summary ?? m.rawContent).slice(0, 500)}`).join('\n')
       : 'No memories yet.';
 
     const systemPrompt = `You are Amber, a personal health network assistant analyzing the user's ${safeDimension} health dimension.
@@ -91,7 +91,7 @@ ${memoryContext}`;
       }
 
       if (!res.ok || !res.body) {
-        send({ type: 'error', message: `Anthropic ${res.status}` });
+        send({ type: 'error', message: 'AI service unavailable' });
         reply.raw.end();
         return reply;
       }

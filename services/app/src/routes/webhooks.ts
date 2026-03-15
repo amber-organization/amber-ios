@@ -99,8 +99,9 @@ async function callAmber(
     });
 
     if (!res.ok) {
-      const err = await res.text();
-      throw new Error(`Anthropic ${res.status}: ${err}`);
+      const errBody = await res.text();
+      console.error('[callAmber] Anthropic API error', res.status, errBody);
+      throw new Error('Upstream AI error');
     }
 
     const data = await res.json() as any;
@@ -122,9 +123,9 @@ async function loadUserContext(userId: number): Promise<string> {
   if (!profile) return '';
 
   const parts: string[] = [];
-  if (profile.displayName) parts.push(`Name: ${profile.displayName}`);
-  if (profile.currentCity) parts.push(`City: ${profile.currentCity}`);
-  if (profile.almaMater) parts.push(`School: ${profile.almaMater}`);
+  if (profile.displayName) parts.push(`Name: ${profile.displayName.slice(0, 100)}`);
+  if (profile.currentCity) parts.push(`City: ${profile.currentCity.slice(0, 100)}`);
+  if (profile.almaMater) parts.push(`School: ${profile.almaMater.slice(0, 100)}`);
 
   const memories = await db
     .select()
@@ -135,7 +136,7 @@ async function loadUserContext(userId: number): Promise<string> {
 
   if (memories.length > 0) {
     parts.push('\nRecent memories:');
-    memories.forEach((m) => parts.push(`- ${m.summary ?? m.rawContent}`));
+    memories.forEach((m) => parts.push(`- ${(m.summary ?? m.rawContent).slice(0, 500)}`));
   }
 
   return parts.join('\n');
@@ -318,10 +319,11 @@ export async function registerWebhookRoutes(app: FastifyInstance) {
    * Same Amber, same conversation history, same onboarding state.
    */
   app.post('/chat', { preHandler: authenticate }, async (req: AuthenticatedRequest, reply: FastifyReply) => {
-    const { message, channel = 'web' } = req.body as {
+    const { message, channel: rawChannel } = req.body as {
       message: string;
-      channel?: 'web' | 'ios';
+      channel?: string;
     };
+    const channel = (['web', 'ios'] as const).includes(rawChannel as any) ? (rawChannel as 'web' | 'ios') : 'web';
 
     if (!message?.trim()) return reply.code(400).send({ error: 'message is required' });
     if (message.length > 4000) return reply.code(400).send({ error: 'message too long' });

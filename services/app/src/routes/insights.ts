@@ -10,7 +10,7 @@ const InsightCreateSchema = z.object({
   priority: z.enum(['high', 'medium', 'low']).default('medium'),
   topic: z.enum(['health', 'connection', 'memory']),
   content: z.string().min(1).max(10000),
-  sources: z.array(z.string()).default([]),
+  sources: z.array(z.string().max(500)).max(20).default([]),
 });
 
 export async function registerInsightRoutes(app: FastifyInstance) {
@@ -107,7 +107,7 @@ export async function registerInsightRoutes(app: FastifyInstance) {
       .limit(20);
 
     const memoryContext = memories.length > 0
-      ? memories.map((m) => `- ${m.summary ?? m.rawContent}`).join('\n')
+      ? memories.map((m) => `- ${(m.summary ?? m.rawContent).slice(0, 500)}`).join('\n')
       : 'No memories yet.';
 
     const prompt = `You are Amber, analyzing a user's ${topic} health based on their recent memories.

@@ -6,9 +6,9 @@ import { eq, and } from 'drizzle-orm';
 import { authenticate, AuthenticatedRequest } from '../auth/middleware.js';
 
 const NodeSchema = z.object({
-  id: z.string(),
-  type: z.string(),
-  config: z.record(z.any()).default({}),
+  id: z.string().max(100),
+  type: z.string().max(100),
+  config: z.record(z.unknown()).default({}),
 });
 
 const PipelineSchema = z.object({
@@ -58,7 +58,8 @@ export async function registerPipelineRoutes(app: FastifyInstance) {
         .where(eq(schema.pipelineRuns.id, run.id));
       return { runId: String(run.id), status: 'succeeded', result };
     } catch (e: any) {
-      logEntries.push(`error: ${e?.message || String(e)}`);
+      app.log.error({ err: e }, 'Pipeline execution error');
+      logEntries.push('error: pipeline step failed');
       await db
         .update(schema.pipelineRuns)
         .set({

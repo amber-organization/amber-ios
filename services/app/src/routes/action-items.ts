@@ -15,7 +15,7 @@ const ActionItemCreateSchema = z.object({
 const ActionItemUpdateSchema = z.object({
   status: z.enum(['open', 'pending', 'completed', 'cancelled']).optional(),
   priority: z.enum(['urgent', 'high', 'normal', 'low']).optional(),
-  description: z.string().optional(),
+  description: z.string().max(2000).optional(),
   dueAt: z.string().datetime().nullable().optional(),
 });
 

@@ -15,10 +15,17 @@
  *   4. Disconnect
  */
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { z } from 'zod';
 import { db, schema } from '../db/client.js';
 import { eq, and } from 'drizzle-orm';
 import { authenticate, AuthenticatedRequest } from '../auth/middleware.js';
 import crypto from 'crypto';
+
+const IntegrationConnectSchema = z.object({
+  externalUserId: z.string().max(256).optional(),
+  accessToken: z.string().max(2048).optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
@@ -142,14 +149,12 @@ export async function registerIntegrationRoutes(app: FastifyInstance) {
     async (req: AuthenticatedRequest, reply: FastifyReply) => {
       const { source } = req.params as { source: string };
       if (!INTEGRATION_DIMENSIONS[source]) {
-        return reply.code(400).send({ error: `Unknown integration: ${source}` });
+        return reply.code(400).send({ error: 'unknown_integration' });
       }
 
-      const { externalUserId, accessToken, metadata } = req.body as {
-        externalUserId?: string;
-        accessToken?: string;
-        metadata?: Record<string, any>;
-      };
+      const connectParse = IntegrationConnectSchema.safeParse(req.body);
+      if (!connectParse.success) return reply.code(400).send({ error: 'invalid_body' });
+      const { externalUserId, accessToken, metadata } = connectParse.data;
 
       // Upsert integration record
       const [existing] = await db
@@ -216,7 +221,7 @@ export async function registerIntegrationRoutes(app: FastifyInstance) {
       const { source } = req.params as { source: string };
 
       if (!INTEGRATION_DIMENSIONS[source]) {
-        return reply.code(400).send({ error: `Unknown integration: ${source}` });
+        return reply.code(400).send({ error: 'unknown_integration' });
       }
 
       // Require webhook secret — reject unauthenticated signal pushes

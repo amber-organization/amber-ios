@@ -8,8 +8,8 @@ import { authenticate, AuthenticatedRequest } from '../auth/middleware.js';
 
 const WebhookSchema = z.object({
   provider: z.enum(['persona', 'stripe']).default('persona'),
-  verification: z.object({ id: z.string(), status: z.string(), payload: z.record(z.any()).optional() }),
-  userId: z.string().optional(),
+  verification: z.object({ id: z.string().max(256), status: z.string().max(50), payload: z.record(z.unknown()).optional() }),
+  userId: z.string().max(256).optional(),
 });
 
 /**

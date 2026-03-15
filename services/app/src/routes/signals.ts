@@ -412,7 +412,7 @@ export async function registerSignalRoutes(app: FastifyInstance) {
    */
   app.post('/signals/dispatch', { preHandler: authenticateAgent }, async (req: FastifyRequest) => {
     const { userId } = req.body as { userId: number };
-    if (!userId) return { dispatched: 0 };
+    if (!userId || !Number.isInteger(userId) || userId <= 0) return { dispatched: 0 };
     const now = new Date();
 
     const pending = await db

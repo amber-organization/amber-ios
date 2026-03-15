@@ -6,7 +6,7 @@ import { verifyPrivyToken } from '../auth/privy.js';
 import { authenticate, AuthenticatedRequest } from '../auth/middleware.js';
 
 const TokenSchema = z.object({
-  accessToken: z.string(),
+  accessToken: z.string().max(4096),
 });
 
 /**
