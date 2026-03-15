@@ -85,15 +85,17 @@ export async function parseVoiceCommand(transcript: string): Promise<VoiceComman
 
 export async function generateVoiceReadout(thread: TriageQueueItem, mode: "brief" | "full" = "brief"): Promise<string> {
   const urgencyLabel = thread.urgency_score >= 75 ? "urgent" : thread.urgency_score >= 50 ? "important" : "low priority"
-  const fromLabel = thread.latest_from ?? "unknown sender"
-  const subject = thread.subject ?? "(no subject)"
+  const fromLabel = (thread.latest_from ?? "unknown sender").slice(0, 200)
+  const subject = (thread.subject ?? "(no subject)").slice(0, 500)
+  const summary = (thread.summary ?? "").slice(0, 1000)
+  const actionType = (thread.action_type ?? "response").slice(0, 100)
 
   if (mode === "brief") {
     const actionPhrase = thread.action_required
-      ? `, needs a ${thread.action_type ?? "response"}`
+      ? `, needs a ${actionType}`
       : ""
 
-    return `${urgencyLabel.charAt(0).toUpperCase() + urgencyLabel.slice(1)} message from ${fromLabel}: "${subject}"${actionPhrase}. ${thread.summary ?? ""}`
+    return `${urgencyLabel.charAt(0).toUpperCase() + urgencyLabel.slice(1)} message from ${fromLabel}: "${subject}"${actionPhrase}. ${summary}`
   }
 
   // Full mode - use AI to create a natural spoken summary
@@ -104,7 +106,7 @@ export async function generateVoiceReadout(thread: TriageQueueItem, mode: "brief
     messages: [
       {
         role: "user",
-        content: `Message: Subject: "${subject}", From: ${fromLabel}, Urgency: ${thread.urgency_score}/100, Summary: ${thread.summary ?? ""}, Action needed: ${thread.action_type ?? "none"}`,
+        content: `Message: Subject: "${subject}", From: ${fromLabel}, Urgency: ${thread.urgency_score}/100, Summary: ${summary}, Action needed: ${actionType}`,
       },
     ],
   })
@@ -125,7 +127,7 @@ export async function generateDailyBriefingNarrative(briefing: {
     messages: [
       {
         role: "user",
-        content: `Morning briefing data: ${briefing.urgent_count} urgent messages, ${briefing.action_required_count} requiring action, ${briefing.unread_count} total unread. Top items: ${briefing.top_urgent.map(u => `"${u.subject ?? "no subject"}" from ${u.from ?? "unknown"} (urgency ${u.urgency})`).join(", ")}`,
+        content: `Morning briefing data: ${briefing.urgent_count} urgent messages, ${briefing.action_required_count} requiring action, ${briefing.unread_count} total unread. Top items: ${briefing.top_urgent.slice(0, 10).map(u => `"${(u.subject ?? "no subject").slice(0, 200)}" from ${(u.from ?? "unknown").slice(0, 100)} (urgency ${u.urgency})`).join(", ")}`,
       },
     ],
   })
