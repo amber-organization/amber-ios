@@ -124,7 +124,7 @@ export async function registerPrivacyRoutes(app: FastifyInstance) {
       .limit(1);
 
     if (user?.privacyTier === 'local_only') {
-      return { error: 'tier_violation', message: 'Upgrade your privacy tier before enabling field sync.' };
+      return reply.code(403).send({ error: 'tier_violation', message: 'Upgrade your privacy tier before enabling field sync.' });
     }
 
     const results = [];

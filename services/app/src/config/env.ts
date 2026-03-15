@@ -26,8 +26,8 @@ export const config = {
 
   // Auth0
   auth0: {
-    domain: optionalEnv('AUTH0_DOMAIN')!,
-    clientId: optionalEnv('AUTH0_CLIENT_ID')!,
+    domain: requireEnv('AUTH0_DOMAIN'),
+    clientId: requireEnv('AUTH0_CLIENT_ID'),
     audience: optionalEnv('AUTH0_AUDIENCE', 'https://api.amber.app')!,
   },
 

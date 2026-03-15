@@ -226,7 +226,12 @@ export async function registerWebhookRoutes(app: FastifyInstance) {
     if (!sig) {
       return reply.code(401).send({ error: 'Missing loop-signature header' });
     }
-    const expected = crypto.createHmac('sha256', secret).update(JSON.stringify(req.body)).digest('hex');
+    const rawPayload = (req as any).rawBody as Buffer | undefined;
+    if (!rawPayload) {
+      app.log.error('rawBody not available — raw body parser not registered');
+      return reply.code(500).send({ error: 'Server misconfiguration' });
+    }
+    const expected = crypto.createHmac('sha256', secret).update(rawPayload).digest('hex');
     if (sig !== expected) return reply.code(401).send({ error: 'Invalid signature' });
 
     const { event, contact, text, message_id } = req.body as {

@@ -15,6 +15,24 @@ const PRICES = {
   team_monthly: process.env.STRIPE_PRICE_TEAM_MONTHLY || '',
 };
 
+const ALLOWED_REDIRECT_DOMAINS = [
+  'amber.health',
+  'www.amber.health',
+  'localhost:3000',
+  'localhost:3001',
+];
+
+function isAllowedRedirectUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return ALLOWED_REDIRECT_DOMAINS.some(
+      (d) => parsed.host === d || parsed.host.endsWith(`.${d}`) || /^amber-.*\.vercel\.app$/.test(parsed.host)
+    );
+  } catch {
+    return false;
+  }
+}
+
 export async function registerBillingRoutes(app: FastifyInstance) {
   /**
    * GET /billing/status
@@ -42,6 +60,13 @@ export async function registerBillingRoutes(app: FastifyInstance) {
 
     const priceId = PRICES[priceKey];
     if (!priceId) return reply.code(400).send({ error: `Unknown price: ${priceKey}` });
+
+    if (!isAllowedRedirectUrl(successUrl)) {
+      return reply.code(400).send({ error: 'Invalid successUrl' });
+    }
+    if (!isAllowedRedirectUrl(cancelUrl)) {
+      return reply.code(400).send({ error: 'Invalid cancelUrl' });
+    }
 
     // Get or create Stripe customer
     let customerId: string | undefined;

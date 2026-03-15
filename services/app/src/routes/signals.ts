@@ -10,12 +10,21 @@ import { z } from 'zod';
 import { db, schema } from '../db/client.js';
 import { eq, and, inArray, lte, gte, isNull } from 'drizzle-orm';
 import { authenticate, AuthenticatedRequest } from '../auth/middleware.js';
+import crypto from 'crypto';
 
 const AGENT_SECRET = process.env.AMBER_AGENT_SECRET;
 
 function authenticateAgent(req: FastifyRequest, reply: FastifyReply, done: () => void) {
   const secret = req.headers['x-agent-secret'];
-  if (!AGENT_SECRET || secret !== AGENT_SECRET) {
+  if (!AGENT_SECRET) {
+    reply.code(401).send({ error: 'unauthorized' });
+    return;
+  }
+  if (
+    secret === undefined ||
+    (secret as string).length !== AGENT_SECRET.length ||
+    !crypto.timingSafeEqual(Buffer.from(secret as string), Buffer.from(AGENT_SECRET))
+  ) {
     reply.code(401).send({ error: 'unauthorized' });
     return;
   }

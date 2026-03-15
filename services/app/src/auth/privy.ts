@@ -20,8 +20,8 @@ export async function verifyPrivyToken(token: string): Promise<PrivyUser> {
   const claims = await privy.verifyAuthToken(token);
   return {
     id: claims.userId,
-    createdAt: 0,
-    linkedAccounts: [],
+    createdAt: (claims as any).createdAt ?? 0,
+    linkedAccounts: (claims as any).linkedAccounts ?? [],
   };
 }
 

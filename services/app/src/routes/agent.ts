@@ -26,7 +26,15 @@ const APP_BASE_URL = process.env.APP_BASE_URL || 'https://amber.health';
 
 function authenticateAgent(req: FastifyRequest, reply: FastifyReply, done: () => void) {
   const secret = req.headers['x-agent-secret'];
-  if (!AGENT_SECRET || secret !== AGENT_SECRET) {
+  if (!AGENT_SECRET) {
+    reply.code(401).send({ error: 'unauthorized' });
+    return;
+  }
+  if (
+    secret === undefined ||
+    (secret as string).length !== AGENT_SECRET.length ||
+    !crypto.timingSafeEqual(Buffer.from(secret as string), Buffer.from(AGENT_SECRET))
+  ) {
     reply.code(401).send({ error: 'unauthorized' });
     return;
   }
@@ -311,17 +319,35 @@ export async function registerAgentRoutes(app: FastifyInstance) {
       const tokenTaskId = (linkToken.metadata as Record<string, any>)?.taskId;
       if (tokenTaskId !== taskId) return reply.code(401).send({ error: 'Token not valid for this task' });
 
-      // Mark token used
-      await db
-        .update(schema.magicLinkTokens)
-        .set({ usedAt: new Date() })
-        .where(eq(schema.magicLinkTokens.id, linkToken.id));
+      // Wrap token mark-used + task approval in a transaction to prevent double-use
+      let alreadyUsed = false;
+      await db.transaction(async (tx) => {
+        // Re-check usedAt inside transaction to prevent race conditions
+        const [freshToken] = await tx
+          .select({ usedAt: schema.magicLinkTokens.usedAt })
+          .from(schema.magicLinkTokens)
+          .where(eq(schema.magicLinkTokens.id, linkToken.id))
+          .limit(1);
 
-      // Approve the task
-      await db
-        .update(schema.agentTasks)
-        .set({ status: 'running', approvedAt: new Date(), updatedAt: new Date() })
-        .where(eq(schema.agentTasks.id, taskId));
+        if (freshToken?.usedAt) {
+          alreadyUsed = true;
+          return;
+        }
+
+        // Mark token used BEFORE updating the task to prevent double-use
+        await tx
+          .update(schema.magicLinkTokens)
+          .set({ usedAt: new Date() })
+          .where(eq(schema.magicLinkTokens.id, linkToken.id));
+
+        // Approve the task
+        await tx
+          .update(schema.agentTasks)
+          .set({ status: 'running', approvedAt: new Date(), updatedAt: new Date() })
+          .where(eq(schema.agentTasks.id, taskId));
+      });
+
+      if (alreadyUsed) return reply.redirect(`${APP_BASE_URL}/approved?already=true`);
 
       // Redirect to a confirmation page
       return reply.redirect(`${APP_BASE_URL}/approved?task=${taskId}`);

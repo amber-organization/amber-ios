@@ -17,6 +17,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { db, schema } from '../db/client.js';
 import { eq, and } from 'drizzle-orm';
 import { authenticate, AuthenticatedRequest } from '../auth/middleware.js';
+import crypto from 'crypto';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
@@ -211,7 +212,11 @@ export async function registerIntegrationRoutes(app: FastifyInstance) {
         return reply.code(500).send({ error: 'Integration not configured' });
       }
       const provided = req.headers['x-amber-webhook-secret'] as string | undefined;
-      if (provided !== secret) {
+      if (
+        provided === undefined ||
+        provided.length !== secret.length ||
+        !crypto.timingSafeEqual(Buffer.from(provided), Buffer.from(secret))
+      ) {
         return reply.code(401).send({ error: 'Invalid webhook secret' });
       }
 
