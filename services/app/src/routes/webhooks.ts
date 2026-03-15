@@ -324,6 +324,7 @@ export async function registerWebhookRoutes(app: FastifyInstance) {
     };
 
     if (!message?.trim()) return reply.code(400).send({ error: 'message is required' });
+    if (message.length > 4000) return reply.code(400).send({ error: 'message too long' });
 
     const progress = await getOrCreateOnboardingProgress(req.userId!);
     const currentStep = progress.currentStep as OnboardingStep;

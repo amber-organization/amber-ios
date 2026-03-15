@@ -37,17 +37,24 @@ export async function extractStructuredData(
   rawText: string,
   claudeApiKey: string
 ): Promise<ExtractionResult> {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': claudeApiKey,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      system: `You are a memory extraction engine for a relationship intelligence system.
+  // Truncate to prevent unbounded token consumption
+  const truncatedText = rawText.slice(0, 8000);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  let response: Response;
+  try {
+    response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': claudeApiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        system: `You are a memory extraction engine for a relationship intelligence system.
 Extract structured data from the user's note. Return JSON only, no explanation.
 
 Schema:
@@ -66,9 +73,13 @@ Schema:
   "summary": string,              // 1-2 sentence summary
   "isActionable": boolean         // is there something to do here?
 }`,
-      messages: [{ role: 'user', content: rawText }]
-    })
-  })
+        messages: [{ role: 'user', content: truncatedText }]
+      }),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) throw new Error(`Claude extraction failed: ${response.status}`)
   const data = await response.json()

@@ -5,7 +5,7 @@ import { eq, and, desc } from 'drizzle-orm';
 import { authenticate, AuthenticatedRequest } from '../auth/middleware.js';
 
 const ActionItemCreateSchema = z.object({
-  description: z.string().min(1),
+  description: z.string().min(1).max(2000),
   personIds: z.array(z.number()).optional().default([]),
   priority: z.enum(['urgent', 'high', 'normal', 'low']).default('normal'),
   requiresApproval: z.boolean().default(false),

@@ -5,7 +5,7 @@ import { eq, desc, and } from 'drizzle-orm';
 import { authenticate, AuthenticatedRequest } from '../auth/middleware.js';
 
 const MemoryCreateSchema = z.object({
-  rawContent: z.string().min(1),
+  rawContent: z.string().min(1).max(10000),
   source: z.enum(['manual_note', 'imessage', 'email', 'call', 'meeting', 'photo', 'health_signal', 'location_signal', 'social_media', 'fireflies', 'loom']).default('manual_note'),
   personIds: z.array(z.number()).optional().default([]),
   privacyTier: z.enum(['local_only', 'selective_cloud', 'full_social']).optional().default('selective_cloud'),

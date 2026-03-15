@@ -2,6 +2,16 @@
 // All templates return self-contained HTML strings with inline CSS.
 // Brand: primary #4f46e5 (indigo-600), text #111827, muted #6b7280
 
+/** Escape HTML special characters to prevent XSS in email content */
+function esc(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+}
+
 const base = (body: string) => `
 <!DOCTYPE html>
 <html lang="en">
@@ -75,14 +85,14 @@ export function applicationSubmittedEmail(params: ApplicationSubmittedParams): s
   const { applicantName, orgName, cycleName, dashboardUrl } = params
   return base(`
     <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#111827;">Application Received</h1>
-    <p style="margin:0 0 24px;font-size:16px;color:#6b7280;">Hi ${applicantName},</p>
+    <p style="margin:0 0 24px;font-size:16px;color:#6b7280;">Hi ${esc(applicantName)},</p>
     <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#374151;">
-      Your application to <strong>${orgName}</strong> for <strong>${cycleName}</strong> has been successfully submitted.
+      Your application to <strong>${esc(orgName)}</strong> for <strong>${esc(cycleName)}</strong> has been successfully submitted.
       The team will review your application and reach out with updates.
     </p>
     <div style="background-color:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:20px 24px;margin:24px 0;">
       <p style="margin:0 0 4px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#9ca3af;">Submitted to</p>
-      <p style="margin:0;font-size:16px;font-weight:600;color:#111827;">${orgName} &mdash; ${cycleName}</p>
+      <p style="margin:0;font-size:16px;font-weight:600;color:#111827;">${esc(orgName)} &mdash; ${esc(cycleName)}</p>
     </div>
     <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#374151;">
       You can track the status of your application at any time from your dashboard.
@@ -90,7 +100,7 @@ export function applicationSubmittedEmail(params: ApplicationSubmittedParams): s
     ${btn(dashboardUrl, 'View Application')}
     ${divider}
     <p style="margin:0;font-size:13px;color:#9ca3af;">
-      Good luck! If you have questions, reach out to the ${orgName} team directly through your dashboard.
+      Good luck! If you have questions, reach out to the ${esc(orgName)} team directly through your dashboard.
     </p>
   `)
 }
@@ -109,19 +119,19 @@ export function applicationStatusUpdateEmail(params: ApplicationStatusUpdatePara
   const { applicantName, orgName, cycleName, newStatus, note, dashboardUrl } = params
   return base(`
     <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#111827;">Application Update</h1>
-    <p style="margin:0 0 24px;font-size:16px;color:#6b7280;">Hi ${applicantName},</p>
+    <p style="margin:0 0 24px;font-size:16px;color:#6b7280;">Hi ${esc(applicantName)},</p>
     <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#374151;">
-      There's an update on your application to <strong>${orgName}</strong> for <strong>${cycleName}</strong>.
+      There's an update on your application to <strong>${esc(orgName)}</strong> for <strong>${esc(cycleName)}</strong>.
     </p>
     <div style="background-color:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:20px 24px;margin:24px 0;">
       <p style="margin:0 0 8px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#9ca3af;">New Status</p>
       ${statusBadge(newStatus)}
-      ${note ? `<p style="margin:16px 0 0;font-size:14px;line-height:1.7;color:#374151;border-top:1px solid #e5e7eb;padding-top:16px;">${note}</p>` : ''}
+      ${note ? `<p style="margin:16px 0 0;font-size:14px;line-height:1.7;color:#374151;border-top:1px solid #e5e7eb;padding-top:16px;">${esc(note)}</p>` : ''}
     </div>
     ${btn(dashboardUrl, 'View Application')}
     ${divider}
     <p style="margin:0;font-size:13px;color:#9ca3af;">
-      If you believe this is an error or have questions, please contact the ${orgName} team through your dashboard.
+      If you believe this is an error or have questions, please contact the ${esc(orgName)} team through your dashboard.
     </p>
   `)
 }
@@ -139,10 +149,10 @@ export function reviewerInviteEmail(params: ReviewerInviteParams): string {
   const { reviewerName, inviterName, orgName, cycleName, reviewUrl } = params
   return base(`
     <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#111827;">You've Been Invited to Review</h1>
-    <p style="margin:0 0 24px;font-size:16px;color:#6b7280;">Hi ${reviewerName},</p>
+    <p style="margin:0 0 24px;font-size:16px;color:#6b7280;">Hi ${esc(reviewerName)},</p>
     <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#374151;">
-      <strong>${inviterName}</strong> has invited you to join the review team for <strong>${orgName}</strong>'s
-      <strong>${cycleName}</strong> recruitment cycle on Marrow.
+      <strong>${esc(inviterName)}</strong> has invited you to join the review team for <strong>${esc(orgName)}</strong>'s
+      <strong>${esc(cycleName)}</strong> recruitment cycle on Marrow.
     </p>
     <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#374151;">
       As a reviewer, you'll be able to read applications, score candidates against the rubric, and leave recommendations
@@ -151,7 +161,7 @@ export function reviewerInviteEmail(params: ReviewerInviteParams): string {
     ${btn(reviewUrl, 'Start Reviewing')}
     ${divider}
     <p style="margin:0;font-size:13px;color:#9ca3af;">
-      This invite was sent by ${inviterName} on behalf of ${orgName}. If you weren't expecting this, you can safely ignore this email.
+      This invite was sent by ${esc(inviterName)} on behalf of ${esc(orgName)}. If you weren't expecting this, you can safely ignore this email.
     </p>
   `)
 }
@@ -168,11 +178,11 @@ export interface BulkMessageParams {
 export function bulkMessageEmail(params: BulkMessageParams): string {
   const { recipientName, orgName, body, unsubscribeUrl } = params
   return base(`
-    <p style="margin:0 0 24px;font-size:16px;color:#6b7280;">Hi ${recipientName},</p>
-    <div style="font-size:15px;line-height:1.8;color:#374151;white-space:pre-wrap;">${body}</div>
+    <p style="margin:0 0 24px;font-size:16px;color:#6b7280;">Hi ${esc(recipientName)},</p>
+    <div style="font-size:15px;line-height:1.8;color:#374151;white-space:pre-wrap;">${esc(body)}</div>
     ${divider}
     <p style="margin:0 0 4px;font-size:13px;color:#9ca3af;">
-      This message was sent to you by <strong>${orgName}</strong> via Marrow.
+      This message was sent to you by <strong>${esc(orgName)}</strong> via Marrow.
     </p>
     ${
       unsubscribeUrl
@@ -194,12 +204,12 @@ export function acceptanceEmail(params: AcceptanceParams): string {
   const { applicantName, orgName, cycleName, onboardingUrl } = params
   return base(`
     <div style="text-align:center;padding:8px 0 32px;">
-      <h1 style="margin:0 0 8px;font-size:28px;font-weight:700;color:#111827;">Congratulations, ${applicantName}!</h1>
+      <h1 style="margin:0 0 8px;font-size:28px;font-weight:700;color:#111827;">Congratulations, ${esc(applicantName)}!</h1>
       <p style="margin:0;font-size:16px;color:#6b7280;">You've been accepted.</p>
     </div>
     <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#374151;">
-      We're thrilled to let you know that you've been accepted to <strong>${orgName}</strong> through the
-      <strong>${cycleName}</strong> recruitment cycle.
+      We're thrilled to let you know that you've been accepted to <strong>${esc(orgName)}</strong> through the
+      <strong>${esc(cycleName)}</strong> recruitment cycle.
     </p>
     <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:#374151;">
       The next step is to complete your onboarding — click the button below to get started. You'll find tasks,
@@ -208,7 +218,7 @@ export function acceptanceEmail(params: AcceptanceParams): string {
     ${btn(onboardingUrl, 'Begin Onboarding')}
     ${divider}
     <p style="margin:0;font-size:13px;color:#9ca3af;">
-      Welcome to the team! If you have any questions, reach out to the ${orgName} team through your Marrow dashboard.
+      Welcome to the team! If you have any questions, reach out to the ${esc(orgName)} team through your Marrow dashboard.
     </p>
   `)
 }

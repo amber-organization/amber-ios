@@ -156,7 +156,7 @@ export async function registerBillingRoutes(app: FastifyInstance) {
       event = stripe.webhooks.constructEvent((req as any).rawBody as Buffer, sig, secret);
     } catch (err: any) {
       app.log.error({ err }, 'Stripe webhook signature verification failed');
-      return reply.code(400).send({ error: `Webhook error: ${err.message}` });
+      return reply.code(400).send({ error: 'Webhook signature verification failed' });
     }
 
     switch (event.type) {

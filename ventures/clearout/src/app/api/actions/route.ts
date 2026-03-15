@@ -130,7 +130,7 @@ export async function PUT(request: Request) {
     .in("id", thread_ids)
     .eq("user_id", user.id)
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ error: 'Failed to update threads' }, { status: 500 })
 
   // Bulk log
   const logEntries = thread_ids.map(tid => ({

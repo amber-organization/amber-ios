@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     .eq("user_id", user.id)
     .order("received_at", { ascending: true })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ error: 'Failed to load messages' }, { status: 500 })
 
   return NextResponse.json({ messages })
 }

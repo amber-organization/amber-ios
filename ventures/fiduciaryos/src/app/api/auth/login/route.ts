@@ -11,6 +11,9 @@ export async function POST(req: NextRequest) {
   if (!password || typeof password !== "string") {
     return NextResponse.json({ error: "Password required" }, { status: 400 });
   }
+  if (password.length > 1000) {
+    return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+  }
 
   let valid: boolean;
   try {

@@ -9,7 +9,7 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const InsightCreateSchema = z.object({
   priority: z.enum(['high', 'medium', 'low']).default('medium'),
   topic: z.enum(['health', 'connection', 'memory']),
-  content: z.string().min(1),
+  content: z.string().min(1).max(10000),
   sources: z.array(z.string()).default([]),
 });
 

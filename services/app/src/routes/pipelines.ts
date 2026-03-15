@@ -12,9 +12,9 @@ const NodeSchema = z.object({
 });
 
 const PipelineSchema = z.object({
-  name: z.string(),
-  nodes: z.array(NodeSchema),
-  edges: z.array(z.tuple([z.string(), z.string()])),
+  name: z.string().max(200),
+  nodes: z.array(NodeSchema).max(50),
+  edges: z.array(z.tuple([z.string(), z.string()])).max(200),
   input: z.any().optional(),
 });
 
@@ -86,10 +86,14 @@ export async function registerPipelineRoutes(app: FastifyInstance) {
         .from(schema.pipelineRuns)
         .where(and(eq(schema.pipelineRuns.id, id), eq(schema.pipelineRuns.userId, req.userId!)));
       if (!run) return reply.code(404).send({ error: 'not_found' });
+      // Strip internal error details from log before returning to client
+      const safeLog = (run.log as string[] | null)?.map((entry) =>
+        entry.startsWith('error:') ? 'error: pipeline step failed' : entry
+      ) ?? [];
       return {
         id: String(run.id),
         status: run.status,
-        log: run.log || [],
+        log: safeLog,
         result: run.result,
       };
     },

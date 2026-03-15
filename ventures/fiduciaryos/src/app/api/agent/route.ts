@@ -5,7 +5,7 @@ import { calcMonthlyAllocation } from "@/lib/finance-engine";
 import { FinancialProfile } from "@/lib/types";
 import { RiskLevel, RISK_LEVEL_LABELS, TaxHarvestCandidate } from "@/lib/unified-types";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY!, timeout: 30000 });
 
 interface AgentRequest {
   question: string;

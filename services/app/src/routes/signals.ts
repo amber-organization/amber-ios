@@ -38,27 +38,27 @@ const ReactSchema = z.object({
 const ContactBatchSchema = z.object({
   contacts: z.array(
     z.object({
-      externalId: z.string(),
-      name: z.string(),
-      phoneNumbers: z.array(z.string()).optional(),
-      emails: z.array(z.string()).optional(),
+      externalId: z.string().max(256),
+      name: z.string().max(256),
+      phoneNumbers: z.array(z.string()).max(20).optional(),
+      emails: z.array(z.string()).max(20).optional(),
       birthday: z.string().optional(), // ISO8601 date
       messageFrequency: z.number().int().optional(),
       lastContactedAt: z.string().optional(),
       relationshipScore: z.number().int().min(0).max(100).optional(),
     }),
-  ),
+  ).max(500),
 });
 
 const CalendarEventSchema = z.object({
   events: z.array(
     z.object({
-      eventId: z.string(),
-      title: z.string(),
+      eventId: z.string().max(256),
+      title: z.string().max(500),
       startDate: z.string(),
-      attendeeExternalIds: z.array(z.string()), // CNContact identifiers of attendees
+      attendeeExternalIds: z.array(z.string().max(256)).max(50),
     }),
-  ),
+  ).max(200),
 });
 
 /** Build a stable dedupe key so the same signal never fires twice */

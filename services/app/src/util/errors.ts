@@ -28,7 +28,7 @@ export function handleError(error: unknown): { code: string; message: string; st
   if (error instanceof Error) {
     return {
       code: 'internal_error',
-      message: error.message,
+      message: 'An internal error occurred',
       statusCode: 500,
     };
   }

@@ -51,27 +51,38 @@ async function computeHealthScore(
 ): Promise<{ score: number; reasoning: string }> {
   if (!ANTHROPIC_API_KEY) return { score: 50, reasoning: 'AI not configured' };
 
+  // Truncate payload to prevent unbounded token consumption
+  const payloadStr = JSON.stringify(payload).slice(0, 3000);
+
   const prompts: Record<string, string> = {
-    financial: `Analyze this financial health data and score from 0-100. Consider portfolio health, cash flow, debt, tax efficiency, and financial goals. Data: ${JSON.stringify(payload)}. Respond with JSON: {"score": number, "reasoning": "1-2 sentence explanation"}`,
-    social: `Analyze this social health data and score from 0-100. Consider connection quality, communication patterns, relationship maintenance, network breadth. Data: ${JSON.stringify(payload)}. Respond with JSON: {"score": number, "reasoning": "1-2 sentence explanation"}`,
-    emotional: `Analyze this emotional health data and score from 0-100. Consider stress indicators, communication tone, workload balance, positive interactions. Data: ${JSON.stringify(payload)}. Respond with JSON: {"score": number, "reasoning": "1-2 sentence explanation"}`,
+    financial: `Analyze this financial health data and score from 0-100. Consider portfolio health, cash flow, debt, tax efficiency, and financial goals. Data: ${payloadStr}. Respond with JSON: {"score": number, "reasoning": "1-2 sentence explanation"}`,
+    social: `Analyze this social health data and score from 0-100. Consider connection quality, communication patterns, relationship maintenance, network breadth. Data: ${payloadStr}. Respond with JSON: {"score": number, "reasoning": "1-2 sentence explanation"}`,
+    emotional: `Analyze this emotional health data and score from 0-100. Consider stress indicators, communication tone, workload balance, positive interactions. Data: ${payloadStr}. Respond with JSON: {"score": number, "reasoning": "1-2 sentence explanation"}`,
   };
 
-  const prompt = prompts[dimension] || `Score ${dimension} health 0-100 from: ${JSON.stringify(payload)}. JSON: {"score": number, "reasoning": "explanation"}`;
+  const prompt = prompts[dimension] || `Score ${dimension} health 0-100 from: ${payloadStr}. JSON: {"score": number, "reasoning": "explanation"}`;
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 200,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  let res: Response;
+  try {
+    res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 200,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!res.ok) return { score: 50, reasoning: 'Score computation failed' };
   const data = await res.json() as any;

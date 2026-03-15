@@ -8,10 +8,10 @@ import { sha256Hex } from '../util/crypto.js';
 const IMMUTABLE_FIELDS = ['birthday', 'almaMater', 'hometown', 'birthdayTime', 'birthdayLocation'];
 
 const ProfileUpdateSchema = z.object({
-  displayName: z.string().min(1).optional(),
-  bio: z.string().optional(),
+  displayName: z.string().min(1).max(100).optional(),
+  bio: z.string().max(1000).optional(),
   avatarUrl: z.string().url().optional(),
-  currentCity: z.string().min(1).optional(),
+  currentCity: z.string().min(1).max(100).optional(),
   privacyTier: z.enum(['local_only', 'selective_cloud', 'full_social']).optional(),
 });
 

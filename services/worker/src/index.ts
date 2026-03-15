@@ -67,7 +67,7 @@ async function extractPendingMemories() {
               max_tokens: 512,
               messages: [{
                 role: 'user',
-                content: `Extract a concise 1-2 sentence summary of this memory. Focus on the person, key fact, and emotional context.\n\nMemory: ${memory.raw_content}\n\nReturn only the summary text.`,
+                content: `Extract a concise 1-2 sentence summary of this memory. Focus on the person, key fact, and emotional context.\n\nMemory: ${memory.raw_content.slice(0, 8000)}\n\nReturn only the summary text.`,
               }],
             }),
             signal: controller.signal,

@@ -82,6 +82,7 @@ export async function registerAgentRoutes(app: FastifyInstance) {
     };
 
     if (!prompt?.trim()) return reply.code(400).send({ error: 'prompt is required' });
+    if (prompt.length > 4000) return reply.code(400).send({ error: 'prompt too long' });
 
     const [task] = await db
       .insert(schema.agentTasks)
@@ -223,6 +224,7 @@ export async function registerAgentRoutes(app: FastifyInstance) {
     };
 
     if (!userId || !text) return reply.code(400).send({ error: 'userId and text required' });
+    if (typeof text === 'string' && text.length > 4000) return reply.code(400).send({ error: 'text too long' });
 
     if (channel === 'imessage') {
       const phone = await getUserPhone(userId);
@@ -260,6 +262,7 @@ export async function registerAgentRoutes(app: FastifyInstance) {
     };
 
     if (!userId || !briefText) return reply.code(400).send({ error: 'userId and briefText required' });
+    if (typeof briefText === 'string' && briefText.length > 10000) return reply.code(400).send({ error: 'briefText too long' });
 
     // Store brief as an agent task for the record
     const [task] = await db

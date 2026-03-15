@@ -6,7 +6,7 @@ import { authenticate, AuthenticatedRequest } from '../auth/middleware.js';
 
 const ApprovalResolveSchema = z.object({
   status: z.enum(['approved', 'rejected', 'edited']),
-  editedContent: z.string().optional(),
+  editedContent: z.string().max(10000).optional(),
 });
 
 export async function registerApprovalRoutes(app: FastifyInstance) {
