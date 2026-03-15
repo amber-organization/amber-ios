@@ -32,7 +32,14 @@ const app = Fastify({
 
 // CORS
 await app.register(cors, {
-  origin: true,
+  origin: [
+    'https://amber.health',
+    'https://www.amber.health',
+    /^https:\/\/.*\.vercel\.app$/,
+    /^https:\/\/.*\.railway\.app$/,
+    'http://localhost:3000',
+    'http://localhost:3001',
+  ],
   credentials: true,
 });
 
@@ -54,11 +61,10 @@ await app.register(registerAiRoutes);
 await app.register(registerIdentityRoutes);
 await app.register(registerAnchorRoutes);
 await app.register(registerInsightRoutes);
-await app.register(registerOnboardingRoutes);
 await app.register(registerProfileRoutes);
 
 // Sprint 1 MVP
-await app.register(registerOnboardingRoutes); // ONBOARD-01/02
+await app.register(registerOnboardingRoutes); // ONBOARD-01/02 (includes public web checkout)
 await app.register(registerPrivacyRoutes);    // PRIVACY-01
 await app.register(registerSignalRoutes);     // SIGNAL-01/02/03/04/05
 await app.register(registerCircleRoutes);     // SOCIAL-01

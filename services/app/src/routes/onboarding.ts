@@ -1,10 +1,36 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { db, schema } from '../db/client.js';
 import { eq, and } from 'drizzle-orm';
 import { authenticateAuth0, AuthenticatedRequest } from '../auth/middleware.js';
 import { sha256Hex } from '../util/crypto.js';
 import { deriveHoroscope } from '../util/horoscope.js';
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  apiVersion: '2025-02-24.acacia',
+});
+
+const WEB_PRICES: Record<string, string> = {
+  pro_monthly: process.env.STRIPE_PRICE_PRO_MONTHLY || '',
+  pro_annual: process.env.STRIPE_PRICE_PRO_ANNUAL || '',
+};
+
+async function sendWelcomeText(phone: string, name?: string) {
+  const apiKey = process.env.LOOP_API_KEY;
+  const senderId = process.env.LOOP_SENDER_ID;
+  if (!apiKey || !senderId) return;
+
+  const firstName = name?.split(' ')[0] || 'there';
+  const message = `Hey ${firstName}! I'm Amber — your personal health network. I track six dimensions of your wellbeing: spiritual, emotional, physical, intellectual, social, and financial.\n\nTo get started, what's your full name, and what city do you live in?`;
+
+  const res = await fetch('https://a.loopmessage.com/api/v1/message/send/', {
+    method: 'POST',
+    headers: { Authorization: apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contact: phone, text: message, sender: senderId }),
+  });
+  if (!res.ok) throw new Error(`Loop Message ${res.status}`);
+}
 
 const STEP_ORDER = ['welcome', 'basics', 'birthday', 'location', 'education', 'permissions', 'privacy_tier', 'complete'] as const;
 
@@ -256,6 +282,81 @@ export async function registerOnboardingRoutes(app: FastifyInstance) {
       .where(eq(schema.onboardingProgress.id, progress.id));
 
     return updatedProfile;
+  });
+
+  // ─── Public Web Signup ─────────────────────────────────────────────────────
+
+  /**
+   * POST /onboarding/web/checkout
+   * Public — no auth. Creates Stripe checkout with phone in metadata.
+   * The /onboarding/web/webhook fires when payment completes → sends welcome iMessage.
+   */
+  app.post('/onboarding/web/checkout', async (req: FastifyRequest, reply) => {
+    const { phone, priceKey, successUrl, cancelUrl, email, name } = req.body as {
+      phone: string;
+      priceKey: string;
+      successUrl: string;
+      cancelUrl: string;
+      email?: string;
+      name?: string;
+    };
+
+    if (!phone) return reply.code(400).send({ error: 'phone is required' });
+    const priceId = WEB_PRICES[priceKey];
+    if (!priceId) return reply.code(400).send({ error: `Unknown plan: ${priceKey}` });
+
+    const customer = await stripe.customers.create({
+      phone,
+      email,
+      name,
+      metadata: { phone, onboarding: 'web' },
+    });
+
+    const session = await stripe.checkout.sessions.create({
+      customer: customer.id,
+      mode: 'subscription',
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      subscription_data: { trial_period_days: 14 },
+    });
+
+    return { url: session.url };
+  });
+
+  /**
+   * POST /onboarding/web/webhook
+   * Stripe webhook for web signups. Add this URL to Stripe dashboard.
+   * Fires on checkout.session.completed → sends welcome iMessage.
+   */
+  app.post('/onboarding/web/webhook', { config: { rawBody: true } }, async (req: FastifyRequest, reply) => {
+    const sig = req.headers['stripe-signature'] as string;
+    const secret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    let event: Stripe.Event;
+    try {
+      event = secret
+        ? stripe.webhooks.constructEvent(req.rawBody as Buffer, sig, secret)
+        : (req.body as Stripe.Event);
+    } catch (err: any) {
+      return reply.code(400).send({ error: err.message });
+    }
+
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const customer = await stripe.customers.retrieve(session.customer as string) as Stripe.Customer;
+      const phone = customer.metadata?.phone ?? customer.phone ?? session.customer_details?.phone;
+      const name = customer.name ?? session.customer_details?.name ?? undefined;
+
+      if (phone) {
+        app.log.info({ phone }, 'Web checkout complete — sending welcome iMessage');
+        await sendWelcomeText(phone, name ?? undefined).catch((err: Error) =>
+          app.log.error({ err }, 'Failed to send welcome text')
+        );
+      }
+    }
+
+    return { received: true };
   });
 
   /**

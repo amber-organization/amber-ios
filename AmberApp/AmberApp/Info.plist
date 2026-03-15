@@ -2,32 +2,80 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Privacy usage descriptions (required by App Store) -->
 	<key>NSContactsUsageDescription</key>
-	<string>Amber needs access to your contacts to help you build your network.</string>
+	<string>Amber uses your contacts to map your relationships and show who you know in your health network.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Amber tracks your activity and sleep to provide health insights.</string>
+	<string>Amber reads your activity, sleep, and workout data to track your physical health dimension.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>Amber updates your health data based on tracked activities.</string>
+	<string>Amber writes health data such as mindfulness sessions to your Health app.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Amber uses your location to show connections on the map.</string>
+	<string>Amber uses your location to show where your connections are on the Find My Friends map.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Amber uses your location in the background to keep your Find My Friends map current.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Amber needs access to your photos for your profile and shared content.</string>
+	<string>Amber needs your photo library to set profile photos for you and your contacts.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Amber saves shared network photos to your library.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Amber uses the camera to capture photos for your profile.</string>
+	<string>Amber uses the camera to take profile photos.</string>
 	<key>NSCalendarsUsageDescription</key>
-	<string>Amber integrates with your calendar to suggest interactions.</string>
+	<string>Amber reads your calendar to suggest relationship touchpoints and track social health.</string>
+	<key>NSRemindersUsageDescription</key>
+	<string>Amber creates reminders for relationship follow-ups and action items.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Amber uses Face ID to protect your private health data.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Amber uses the microphone for voice notes on contact interactions.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Amber transcribes voice notes to add to your contact memories.</string>
+
+	<!-- Auth0 -->
 	<key>Auth0Domain</key>
 	<string>dev-4prs757badfajpi5.us.auth0.com</string>
 	<key>Auth0ClientId</key>
 	<string>ytP3na2gIO9Wpsc4cEt1klmSbPF4ZAIe</string>
+
+	<!-- URL schemes (Auth0 callback + universal link fallback) -->
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
+			<key>CFBundleURLName</key>
+			<string>auth0</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>com.Amber.AmberApp</string>
 			</array>
 		</dict>
 	</array>
+
+	<!-- App Store metadata -->
+	<key>CFBundleDisplayName</key>
+	<string>Amber</string>
+	<key>CFBundleName</key>
+	<string>AmberApp</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundlePackageType</key>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>armv7</string>
+	</array>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UILaunchScreen</key>
+	<dict/>
+	<!-- Required for App Store export compliance — Amber uses standard HTTPS only -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

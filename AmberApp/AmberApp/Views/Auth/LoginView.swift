@@ -2,8 +2,6 @@
 //  LoginView.swift
 //  AmberApp
 //
-//  Created on 2026-03-04.
-//
 
 import SwiftUI
 
@@ -12,121 +10,130 @@ struct LoginView: View {
 
     var body: some View {
         ZStack {
-            Color.amberBackground
-                .ignoresSafeArea()
+            Color.amberBackground.ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                Spacer()
+            ScrollView {
+                VStack(spacing: 0) {
+                    Spacer(minLength: 60)
 
-                // Logo and app name
-                VStack(spacing: 16) {
-                    Image(systemName: "hexagon.fill")
-                        .font(.system(size: 64))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.amberBlue, .amberGold],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-
-                    Text("Amber")
-                        .font(.system(size: 40, weight: .bold))
-                        .foregroundColor(.white)
-
-                    Text("Your Health Network")
-                        .font(.amberBody)
-                        .foregroundColor(.gray)
-                }
-
-                Spacer()
-
-                // Sign in section
-                VStack(spacing: 20) {
-                    Text("Sign in to Amber")
-                        .font(.amberHeadline)
-                        .foregroundColor(.white)
-
-                    // Error message
-                    if let error = authViewModel.error {
-                        Text(error)
-                            .font(.amberCaption)
-                            .foregroundColor(.red)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 24)
+                    // ── Logo ──────────────────────────────────────────────
+                    VStack(spacing: 14) {
+                        ZStack {
+                            Circle()
+                                .fill(LinearGradient(
+                                    colors: [.amberBlue.opacity(0.25), .amberGold.opacity(0.25)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ))
+                                .frame(width: 80, height: 80)
+                            Text("A")
+                                .font(.system(size: 40, weight: .bold))
+                                .foregroundStyle(LinearGradient(
+                                    colors: [.amberBlue, .amberGold],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ))
+                        }
+                        Text("Amber")
+                            .font(.system(size: 34, weight: .bold))
+                            .foregroundColor(.white)
+                        Text("Your Health Network")
+                            .font(.amberBody)
+                            .foregroundColor(.gray)
                     }
 
-                    VStack(spacing: 12) {
-                        // Continue with Google
-                        Button(action: { authViewModel.loginWithGoogle() }) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "g.circle.fill")
-                                    .font(.system(size: 20))
-                                Text("Continue with Google")
-                                    .font(.system(size: 17, weight: .semibold))
-                            }
+                    Spacer(minLength: 48)
+
+                    // ── Sign in ───────────────────────────────────────────
+                    VStack(spacing: 14) {
+                        Text("Sign in to Amber")
+                            .font(.amberHeadline)
                             .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 54)
-                            .background(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .fill(.ultraThinMaterial)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                                    )
-                            )
+
+                        if let error = authViewModel.error {
+                            Text(error)
+                                .font(.amberCaption)
+                                .foregroundColor(.red)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 16)
+                        }
+
+                        VStack(spacing: 10) {
+                            AuthButton(systemIcon: "g.circle.fill",  label: "Continue with Google",    style: .glass) { authViewModel.loginWithGoogle() }
+                            AuthButton(systemIcon: "apple.logo",      label: "Continue with Apple",     style: .dark)  { authViewModel.loginWithApple() }
+                            AuthButton(systemIcon: "chevron.left.forwardslash.chevron.right", label: "Continue with GitHub", style: .glass) { authViewModel.loginWithGitHub() }
+                            AuthButton(systemIcon: "briefcase.fill",  label: "Continue with LinkedIn",  style: .glass) { authViewModel.loginWithLinkedIn() }
+                            AuthButton(systemIcon: "square.grid.2x2.fill", label: "Continue with Microsoft", style: .glass) { authViewModel.loginWithMicrosoft() }
+                            AuthButton(systemIcon: "envelope.fill",   label: "Continue with Email",     style: .blue)  { authViewModel.loginWithEmail() }
                         }
                         .disabled(authViewModel.isLoading)
 
-                        // Continue with Email
-                        Button(action: { authViewModel.login() }) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "envelope.fill")
-                                    .font(.system(size: 20))
-                                Text("Continue with Email")
-                                    .font(.system(size: 17, weight: .semibold))
-                            }
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 54)
-                            .background(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .fill(Color.amberBlue)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                                    )
-                            )
+                        if authViewModel.isLoading {
+                            ProgressView().tint(.amberGold)
                         }
-                        .disabled(authViewModel.isLoading)
                     }
                     .padding(.horizontal, 24)
 
-                    // Loading indicator
-                    if authViewModel.isLoading {
-                        ProgressView()
-                            .tint(.amberBlue)
-                            .padding(.top, 8)
-                    }
+                    Spacer(minLength: 40)
+
+                    Text("By continuing, you agree to Amber's Terms of Service and Privacy Policy.")
+                        .font(.amberCaption)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                        .padding(.bottom, 40)
                 }
-
-                Spacer()
-
-                // Footer
-                Text("By continuing, you agree to Amber's Terms of Service and Privacy Policy.")
-                    .font(.amberCaption)
-                    .foregroundColor(.gray)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
-                    .padding(.bottom, 32)
             }
         }
         .preferredColorScheme(.dark)
     }
 }
 
+// ── Reusable auth button ─────────────────────────────────────────────────────
+
+private enum AuthButtonStyle { case glass, dark, blue }
+
+private struct AuthButton: View {
+    let systemIcon: String
+    let label: String
+    let style: AuthButtonStyle
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: systemIcon)
+                    .font(.system(size: 17, weight: .medium))
+                Text(label)
+                    .font(.system(size: 16, weight: .semibold))
+                Spacer()
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 18)
+            .frame(height: 52)
+            .background(background)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(borderColor, lineWidth: 1)
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var background: some View {
+        switch style {
+        case .glass: Color.white.opacity(0.07)
+        case .dark:  Color(red: 0.1, green: 0.1, blue: 0.1)
+        case .blue:  Color.amberBlue
+        }
+    }
+
+    private var borderColor: Color {
+        style == .blue ? .clear : Color.white.opacity(0.12)
+    }
+}
+
 #Preview {
-    LoginView()
-        .environmentObject(AuthViewModel())
+    LoginView().environmentObject(AuthViewModel())
 }

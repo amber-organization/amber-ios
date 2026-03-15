@@ -2,96 +2,120 @@
 //  AuthViewModel.swift
 //  AmberApp
 //
-//  Created on 2026-03-04.
-//
+
 import SwiftUI
 import Auth0
+
 @MainActor
 class AuthViewModel: ObservableObject {
     @Published var isAuthenticated: Bool = false
     @Published var isLoading: Bool = false
     @Published var error: String?
     @Published var accessToken: String?
-    private let credentialsManager = CredentialsManager(authentication: Auth0.authentication(
-        clientId: "ytP3na2gIO9Wpsc4cEt1klmSbPF4ZAIe",
-        domain: "dev-4prs757badfajpi5.us.auth0.com"
-    ))
+
+    private let auth0ClientId = "ytP3na2gIO9Wpsc4cEt1klmSbPF4ZAIe"
+    private let auth0Domain  = "dev-4prs757badfajpi5.us.auth0.com"
+    private let audience     = "https://api.amber.app"
+
+    private lazy var credentialsManager = CredentialsManager(
+        authentication: Auth0.authentication(clientId: auth0ClientId, domain: auth0Domain)
+    )
+
     private var webAuth: WebAuth {
-        Auth0.webAuth(
-            clientId: "ytP3na2gIO9Wpsc4cEt1klmSbPF4ZAIe",
-            domain: "dev-4prs757badfajpi5.us.auth0.com"
-        )
+        Auth0.webAuth(clientId: auth0ClientId, domain: auth0Domain)
     }
-    /// Log in via Auth0 Universal Login (supports email/password and social providers)
-    func login() {
-        isLoading = true
-        error = nil
-        Task {
-            do {
-                let credentials = try await webAuth
-                    .scope("openid profile email offline_access")
-                    .audience("https://api.amber.app")
-                    .start()
-                _ = credentialsManager.store(credentials: credentials)
-                accessToken = credentials.accessToken
-                APIClient.shared.accessToken = credentials.accessToken
-                isAuthenticated = true
-                isLoading = false
-            } catch WebAuthError.userCancelled {
-                isLoading = false
-            } catch {
-                self.error = error.localizedDescription
-                isLoading = false
-            }
+
+    // ── Shared credential handler ────────────────────────────────────────────
+
+    private func handleCredentials(_ credentials: Credentials) {
+        _ = credentialsManager.store(credentials: credentials)
+        accessToken = credentials.accessToken
+        APIClient.shared.accessToken = credentials.accessToken
+        isAuthenticated = true
+        isLoading = false
+    }
+
+    private func handleError(_ err: Error) {
+        if case WebAuthError.userCancelled = err {
+            isLoading = false
+        } else {
+            error = err.localizedDescription
+            isLoading = false
         }
     }
-    /// Log in with Google connection specifically
+
+    private func auth(connection: String? = nil) async throws -> Credentials {
+        var builder = webAuth
+            .scope("openid profile email offline_access")
+            .audience(audience)
+
+        if let connection = connection {
+            builder = builder.connection(connection)
+        }
+
+        return try await builder.start()
+    }
+
+    // ── Public sign-in methods ───────────────────────────────────────────────
+
+    /// Sign in with Google
     func loginWithGoogle() {
+        startAuth(connection: "google-oauth2")
+    }
+
+    /// Sign in with Apple (via Auth0 Apple social connection)
+    func loginWithApple() {
+        startAuth(connection: "apple")
+    }
+
+    /// Sign in with GitHub
+    func loginWithGitHub() {
+        startAuth(connection: "github")
+    }
+
+    /// Sign in with LinkedIn
+    func loginWithLinkedIn() {
+        startAuth(connection: "linkedin")
+    }
+
+    /// Sign in with Microsoft
+    func loginWithMicrosoft() {
+        startAuth(connection: "windowslive")
+    }
+
+    /// Sign in with email (Auth0 Universal Login)
+    func loginWithEmail() {
+        startAuth(connection: nil)
+    }
+
+    private func startAuth(connection: String?) {
         isLoading = true
         error = nil
         Task {
             do {
-                let credentials = try await webAuth
-                    .connection("google-oauth2")
-                    .scope("openid profile email offline_access")
-                    .audience("https://api.amber.app")
-                    .start()
-                _ = credentialsManager.store(credentials: credentials)
-                accessToken = credentials.accessToken
-                APIClient.shared.accessToken = credentials.accessToken
-                isAuthenticated = true
-                isLoading = false
-            } catch WebAuthError.userCancelled {
-                isLoading = false
+                let credentials = try await auth(connection: connection)
+                handleCredentials(credentials)
             } catch {
-                self.error = error.localizedDescription
-                isLoading = false
+                handleError(error)
             }
         }
     }
-    /// Log out and clear stored credentials
+
+    // ── Session management ───────────────────────────────────────────────────
+
     func logout() {
         isLoading = true
         error = nil
         Task {
-            do {
-                try await webAuth.clearSession()
-                _ = credentialsManager.clear()
-                accessToken = nil
-                APIClient.shared.accessToken = nil
-                isAuthenticated = false
-                isLoading = false
-            } catch {
-                // Clear local state even if remote logout fails
-                _ = credentialsManager.clear()
-                accessToken = nil
-                APIClient.shared.accessToken = nil
-                isAuthenticated = false
-                isLoading = false
-            }
+            _ = try? await webAuth.clearSession()
+            _ = credentialsManager.clear()
+            accessToken = nil
+            APIClient.shared.accessToken = nil
+            isAuthenticated = false
+            isLoading = false
         }
     }
-    /// Check for an existing valid session on app launch
+
     func checkSession() {
         guard credentialsManager.canRenew() else {
             isAuthenticated = false
@@ -101,10 +125,7 @@ class AuthViewModel: ObservableObject {
         Task {
             do {
                 let credentials = try await credentialsManager.credentials()
-                accessToken = credentials.accessToken
-                APIClient.shared.accessToken = credentials.accessToken
-                isAuthenticated = true
-                isLoading = false
+                handleCredentials(credentials)
             } catch {
                 _ = credentialsManager.clear()
                 isAuthenticated = false
