@@ -27,16 +27,26 @@ export async function POST(req: NextRequest) {
 
   const a = calcMonthlyAllocation(profile);
 
+  // Sanitize user-supplied strings before prompt injection
+  const safeAlerts = (riskAlerts ?? [])
+    .slice(0, 20)
+    .map(a => typeof a === "string" ? a.replace(/[\n\r<>]/g, "").slice(0, 200) : "")
+    .filter(Boolean);
+
+  const safeCandidates = (harvestCandidates ?? [])
+    .slice(0, 20)
+    .filter(c => typeof c.ticker === "string" && /^[A-Z]{1,5}$/.test(c.ticker));
+
   const riskSection = riskLevel !== undefined
     ? `\nPORTFOLIO STATUS:
 • Risk level: ${RISK_LEVEL_LABELS[riskLevel]}
-• Active alerts: ${riskAlerts?.length ? riskAlerts.join("; ") : "None"}
-• Total portfolio value: $${portfolioTotalUsd?.toLocaleString() ?? "Unknown"}`
+• Active alerts: ${safeAlerts.length ? safeAlerts.join("; ") : "None"}
+• Total portfolio value: $${typeof portfolioTotalUsd === "number" ? portfolioTotalUsd.toLocaleString() : "Unknown"}`
     : "";
 
-  const harvestSection = harvestCandidates?.length
+  const harvestSection = safeCandidates.length
     ? `\nTAX HARVEST OPPORTUNITIES:
-${harvestCandidates.map(c => `• ${c.ticker}: $${Math.abs(c.unrealized_loss_usd).toLocaleString()} unrealized loss → $${c.tax_savings_estimate_usd.toLocaleString()} tax savings (wash-sale safe: ${c.wash_sale_safe ? "yes" : "no"})`).join("\n")}`
+${safeCandidates.map(c => `• ${c.ticker}: $${Math.abs(c.unrealized_loss_usd).toLocaleString()} unrealized loss → $${c.tax_savings_estimate_usd.toLocaleString()} tax savings (wash-sale safe: ${c.wash_sale_safe ? "yes" : "no"})`).join("\n")}`
     : "";
 
   const system = `You are FiduciaryOS, a fiduciary-grade personal wealth manager and advisor. You explain allocation plans and investment strategy clearly and concisely. You NEVER invent numbers — all figures come from the engine data below.

@@ -16,6 +16,9 @@ export async function GET(request: Request) {
   if (!threadId) {
     return NextResponse.json({ error: "thread_id required" }, { status: 400 })
   }
+  if (!/^[0-9a-f-]{36}$/.test(threadId)) {
+    return NextResponse.json({ error: "invalid thread_id" }, { status: 400 })
+  }
 
   const { data: messages, error } = await (supabase as any)
     .from("messages")
@@ -23,6 +26,7 @@ export async function GET(request: Request) {
     .eq("thread_id", threadId)
     .eq("user_id", user.id)
     .order("received_at", { ascending: true })
+    .limit(100)
 
   if (error) return NextResponse.json({ error: 'Failed to load messages' }, { status: 500 })
 

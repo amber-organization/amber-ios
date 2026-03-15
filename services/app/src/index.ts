@@ -65,7 +65,8 @@ await app.register(cors, {
 app.setErrorHandler((error, request, reply) => {
   const { code, message, statusCode, context } = handleError(error);
   app.log.error({ error, code, context, reqId: request.id }, message);
-  reply.code(statusCode).send({ error: code, message, ...context });
+  // Never spread internal context into HTTP responses — it may contain DB rows, stack traces, or keys
+  reply.code(statusCode).send({ error: code, message });
 });
 
 // ─── Routes ───────────────────────────────────────────────────────────────────

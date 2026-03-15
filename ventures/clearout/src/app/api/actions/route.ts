@@ -5,7 +5,7 @@ import { z } from "zod"
 const ActionSchema = z.object({
   thread_id: z.string().uuid(),
   action: z.enum(["archive", "snooze", "mark_read", "done", "label", "create_task"]),
-  action_data: z.record(z.unknown()).optional().default({}),
+  action_data: z.record(z.unknown()).optional().default({}).refine(val => JSON.stringify(val).length < 10_000, "action_data too large"),
   approved_by: z.enum(["user", "auto_policy", "voice"]).optional().default("user"),
 })
 
@@ -65,13 +65,17 @@ export async function POST(request: Request) {
 
   if (action === "snooze") {
     const snoozeUntil = (action_data as Record<string, string>)?.until
-    if (!snoozeUntil) {
-      return NextResponse.json({ error: "snooze requires 'until' date" }, { status: 400 })
+    if (!snoozeUntil || typeof snoozeUntil !== "string" || snoozeUntil.length > 50) {
+      return NextResponse.json({ error: "snooze requires a valid 'until' date" }, { status: 400 })
+    }
+    const snoozeDate = new Date(snoozeUntil)
+    if (isNaN(snoozeDate.getTime())) {
+      return NextResponse.json({ error: "snooze 'until' must be a valid date" }, { status: 400 })
     }
 
     await (supabase as any)
       .from("threads")
-      .update({ status: "snoozed", snoozed_until: snoozeUntil })
+      .update({ status: "snoozed", snoozed_until: snoozeDate.toISOString() })
       .eq("id", thread_id)
   } else if (newStatus !== thread.status) {
     await (supabase as any)
@@ -81,7 +85,11 @@ export async function POST(request: Request) {
   }
 
   if (action === "label" && (action_data as Record<string, string[]>)?.labels) {
-    const labels = (action_data as Record<string, string[]>).labels
+    const rawLabels = (action_data as Record<string, unknown>).labels
+    if (!Array.isArray(rawLabels)) {
+      return NextResponse.json({ error: "labels must be an array" }, { status: 400 })
+    }
+    const labels = rawLabels.slice(0, 20).map(l => String(l).slice(0, 100))
     await (supabase as any)
       .from("threads")
       .update({ labels })

@@ -41,9 +41,14 @@ export async function POST(req: NextRequest) {
 
   let profile: unknown;
   try {
-    profile = await req.json();
+    const raw = await req.text();
+    if (raw.length > 50_000) return NextResponse.json({ error: "Request too large" }, { status: 413 });
+    profile = JSON.parse(raw);
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+  if (typeof profile !== "object" || profile === null || Array.isArray(profile)) {
+    return NextResponse.json({ error: "profile must be an object" }, { status: 400 });
   }
 
   const supabase = getSupabase();

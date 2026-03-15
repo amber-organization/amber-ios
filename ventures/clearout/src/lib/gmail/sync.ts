@@ -289,7 +289,8 @@ export async function syncGmailChannel(
 
           threadsProcessed++
         } catch (threadErr) {
-          errors.push(`Thread ${threadRef.id}: ${String(threadErr)}`)
+          console.error(`[gmail/sync] thread ${threadRef.id} failed:`, threadErr)
+          errors.push(`Thread sync failed`)
         }
       }
 
@@ -313,11 +314,12 @@ export async function syncGmailChannel(
       .eq("id", channelId)
 
   } catch (err) {
+    console.error("[gmail/sync] sync failed:", err)
     await (supabase as any)
       .from("channels")
       .update({
         sync_status: "error",
-        error_message: String(err),
+        error_message: "Sync failed — please reconnect your account",
       })
       .eq("id", channelId)
     throw err

@@ -7,7 +7,10 @@ export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
   if (!auth.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await req.json();
+  const raw = await req.text();
+  if (raw.length > 100_000) return NextResponse.json({ error: "Request too large" }, { status: 413 });
+  let body: unknown;
+  try { body = JSON.parse(raw); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 
   try {
     const controller = new AbortController();
