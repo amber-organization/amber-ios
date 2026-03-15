@@ -109,21 +109,28 @@ export async function generateEmbedding(
   text: string,
   openaiApiKey: string
 ): Promise<number[]> {
-  const response = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${openaiApiKey || process.env.OPENAI_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: 'text-embedding-3-small',
-      input: text
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch('https://api.openai.com/v1/embeddings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openaiApiKey || process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'text-embedding-3-small',
+        input: text
+      }),
+      signal: controller.signal,
     })
-  })
 
-  if (!response.ok) return [] // Return empty if embedding fails
-  const data = await response.json()
-  return data.data[0].embedding
+    if (!response.ok) return []
+    const data = await response.json()
+    return data.data[0].embedding
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 // ============================================================================
@@ -154,7 +161,7 @@ export async function ingestMemory(
     ? [request.personName, ...extracted.personNames]
     : extracted.personNames
 
-  for (const name of [...new Set(hintedNames)]) {
+  for (const name of [...new Set(hintedNames)].slice(0, 10)) {
     if (name) {
       const person = await deps.findOrCreatePerson(name, userId)
       linkedPeople.push(person)
@@ -165,7 +172,7 @@ export async function ingestMemory(
   const embeddingVector = await generateEmbedding(
     `${extracted.summary} ${extracted.traits.join(' ')} ${rawText}`,
     process.env.OPENAI_API_KEY || ''
-  ).catch(() => [])
+  ).catch((err) => { console.error('[memory-engine] embedding failed:', err.message); return []; })
 
   // 4. Save memory
   const memory = await deps.saveMemory({
@@ -188,7 +195,7 @@ export async function ingestMemory(
 
   // 5. Create action items
   const createdActionItems: ActionItem[] = []
-  for (const ai of extracted.actionItems) {
+  for (const ai of extracted.actionItems.slice(0, 10)) {
     const personId = linkedPeople.find(p =>
       p.fullName.toLowerCase().includes((ai.personName || '').toLowerCase())
     )?.id

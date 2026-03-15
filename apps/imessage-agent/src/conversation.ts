@@ -17,11 +17,11 @@ export function getHistory(userId: number): Message[] {
 }
 
 export function addUserMessage(userId: number, text: string) {
-  push(userId, { role: 'user', content: text })
+  push(userId, { role: 'user', content: text.slice(0, 4000) })
 }
 
 export function addAssistantMessage(userId: number, text: string) {
-  push(userId, { role: 'assistant', content: text })
+  push(userId, { role: 'assistant', content: text.slice(0, 4000) })
 }
 
 function push(userId: number, message: Message) {

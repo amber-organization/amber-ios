@@ -102,36 +102,54 @@ async function handleInbound(payload: LoopWebhookPayload): Promise<void> {
 
 const server = createServer((req, res) => {
   if (req.method === 'POST' && req.url === '/webhook') {
+    const secret = process.env.LOOP_WEBHOOK_SECRET;
+    if (!secret) {
+      console.error('[webhook] LOOP_WEBHOOK_SECRET not set — refusing webhook')
+      res.writeHead(500, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: 'Webhook not configured' }))
+      return
+    }
+
     let body = ''
-    req.on('data', chunk => { body += chunk.toString() })
+    let bodySize = 0
+    const MAX_BODY_BYTES = 64 * 1024 // 64 KB
+    req.on('data', chunk => {
+      bodySize += chunk.length
+      if (bodySize > MAX_BODY_BYTES) {
+        res.writeHead(413, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'Payload too large' }))
+        req.destroy()
+        return
+      }
+      body += chunk.toString()
+    })
     req.on('end', () => {
+      if (res.writableEnded) return
+
       // HMAC signature verification
-      const secret = process.env.LOOP_WEBHOOK_SECRET;
-      if (secret) {
-        const sig = req.headers['loop-signature'] as string | undefined;
-        if (!sig) {
-          res.writeHead(401, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ error: 'Missing signature' }))
-          return
-        }
-        let parsedBody: unknown
-        try {
-          parsedBody = JSON.parse(body)
-        } catch {
-          res.writeHead(400, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ error: 'Invalid JSON' }))
-          return
-        }
-        const expected = crypto.createHmac('sha256', secret)
-          .update(JSON.stringify(parsedBody))
-          .digest('hex');
-        const sigBuf = Buffer.from(sig)
-        const expBuf = Buffer.from(expected)
-        if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
-          res.writeHead(401, { 'Content-Type': 'application/json' })
-          res.end(JSON.stringify({ error: 'Invalid signature' }))
-          return
-        }
+      const sig = req.headers['loop-signature'] as string | undefined;
+      if (!sig) {
+        res.writeHead(401, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'Missing signature' }))
+        return
+      }
+      let parsedBody: unknown
+      try {
+        parsedBody = JSON.parse(body)
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'Invalid JSON' }))
+        return
+      }
+      const expected = crypto.createHmac('sha256', secret)
+        .update(JSON.stringify(parsedBody))
+        .digest('hex');
+      const sigBuf = Buffer.from(sig.trim(), 'hex')
+      const expBuf = Buffer.from(expected, 'hex')
+      if (sigBuf.length === 0 || sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+        res.writeHead(401, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ error: 'Invalid signature' }))
+        return
       }
 
       // Respond immediately so Loop doesn't retry
@@ -142,6 +160,7 @@ const server = createServer((req, res) => {
         const payload = JSON.parse(body) as LoopWebhookPayload
         if (payload.event === 'message_inbound' && payload.text) {
           requestCount++
+          payload.text = payload.text.slice(0, 4000)
           handleInbound(payload).catch(err => {
             console.error(`[webhook] error:`, err.message)
             // Best-effort error reply to the user
@@ -161,15 +180,12 @@ const server = createServer((req, res) => {
 
   if (req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify({
-      status: 'ok',
-      uptime: process.uptime(),
-    }))
+    res.end(JSON.stringify({ status: 'ok' }))
     return
   }
 
-  res.writeHead(200)
-  res.end('Amber is running.')
+  res.writeHead(404)
+  res.end('Not found')
 })
 
 server.listen(PORT, () => {

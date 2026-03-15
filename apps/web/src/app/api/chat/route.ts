@@ -26,7 +26,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
-  const body = await req.json();
+  const raw = await req.json();
+  const message = typeof raw?.message === 'string' ? raw.message.slice(0, 4000) : '';
+  const channel = typeof raw?.channel === 'string' ? raw.channel.slice(0, 20) : undefined;
+  if (!message.trim()) {
+    return NextResponse.json({ error: 'message is required' }, { status: 400 });
+  }
+  const body = { message, ...(channel ? { channel } : {}) };
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 30000);
   try {

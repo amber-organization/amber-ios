@@ -82,6 +82,9 @@ export default function OnboardingPage() {
       }
 
       const { url } = await res.json();
+      if (!url?.startsWith('https://checkout.stripe.com/')) {
+        throw new Error('Invalid checkout URL');
+      }
       window.location.href = url;
     } catch (err: any) {
       setError(err.message);

@@ -4,6 +4,7 @@
  */
 
 import { Storage } from '@google-cloud/storage'
+import path from 'path'
 
 let storageClient: Storage | null = null
 
@@ -15,8 +16,8 @@ function getStorage(): Storage {
         const raw = process.env.GCP_SERVICE_ACCOUNT_JSON;
         if (!raw) throw new Error('GCP_SERVICE_ACCOUNT_JSON is not set');
         credentials = JSON.parse(raw);
-      } catch (err: any) {
-        throw new Error(`Failed to parse GCP_SERVICE_ACCOUNT_JSON: ${err.message}`);
+      } catch {
+        throw new Error('Failed to parse GCP_SERVICE_ACCOUNT_JSON: invalid JSON');
       }
     }
     storageClient = new Storage({
@@ -58,6 +59,9 @@ export async function downloadFile(gcpPath: string): Promise<Buffer> {
 
   // Strip gs://bucket/ prefix if present
   const filePath = gcpPath.replace(`gs://${BUCKET_NAME}/`, '')
+  if (filePath.includes('..') || filePath.startsWith('/')) {
+    throw new Error('Invalid file path')
+  }
   const file = bucket.file(filePath)
 
   const [contents] = await file.download()
@@ -68,6 +72,9 @@ export async function deleteFile(gcpPath: string): Promise<void> {
   const storage = getStorage()
   const bucket = storage.bucket(BUCKET_NAME)
   const filePath = gcpPath.replace(`gs://${BUCKET_NAME}/`, '')
+  if (filePath.includes('..') || filePath.startsWith('/')) {
+    throw new Error('Invalid file path')
+  }
   await bucket.file(filePath).delete()
 }
 
@@ -102,7 +109,8 @@ export async function uploadMemoryAttachment(
   buffer: Buffer,
   contentType: string
 ): Promise<string> {
-  const destination = `users/${userId}/memories/${memoryId}/${filename}`
+  const safeFilename = path.basename(filename).replace(/[^a-zA-Z0-9._-]/g, '_')
+  const destination = `users/${userId}/memories/${memoryId}/${safeFilename}`
   return uploadFile(destination, buffer, contentType, {
     userId,
     memoryId
