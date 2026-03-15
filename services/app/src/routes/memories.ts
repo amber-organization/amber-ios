@@ -60,7 +60,15 @@ export async function registerMemoryRoutes(app: FastifyInstance) {
       })
       .returning();
 
-    // TODO: enqueue Claude extraction job via worker
+    // Extraction is handled asynchronously by the background worker, which polls for
+    // memories with a null summary every minute. If WORKER_URL is set (co-deployed
+    // worker), we also notify it immediately so extraction starts without waiting for
+    // the next poll cycle. Fire-and-forget — a failure here doesn't affect the response.
+    const workerUrl = process.env.WORKER_URL;
+    if (workerUrl) {
+      fetch(`${workerUrl}/extract`, { method: 'POST' }).catch(() => {});
+    }
+
     return reply.code(201).send(memory);
   });
 
