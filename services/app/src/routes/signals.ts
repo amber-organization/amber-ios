@@ -102,6 +102,7 @@ export async function registerSignalRoutes(app: FastifyInstance) {
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
       const { id: idStr } = req.params as { id: string }; const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
       const [signal] = await db
         .select()
         .from(schema.signals)
@@ -128,6 +129,7 @@ export async function registerSignalRoutes(app: FastifyInstance) {
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
       const { id: idStr } = req.params as { id: string }; const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
       const { action } = ReactSchema.parse(req.body);
 
       const [signal] = await db

@@ -67,7 +67,7 @@ export async function authenticate(
     request.auth0UserId = auth0UserId;
     return;
   } catch (error: any) {
-    reply.code(401).send({ error: 'unauthorized', message: error?.message || 'Invalid token' });
+    reply.code(401).send({ error: 'unauthorized', message: 'Invalid token' });
     return;
   }
 }
@@ -110,9 +110,8 @@ export async function authenticateAuth0(
 
     request.userId = user.id;
     request.auth0UserId = auth0UserId;
-  } catch (error: any) {
-    console.error('Auth0 verify error:', error);
-    reply.code(401).send({ error: 'unauthorized', message: error?.message || 'Invalid token' });
+  } catch {
+    reply.code(401).send({ error: 'unauthorized', message: 'Invalid token' });
     return;
   }
 }

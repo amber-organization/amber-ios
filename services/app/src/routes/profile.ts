@@ -115,6 +115,7 @@ export async function registerProfileRoutes(app: FastifyInstance) {
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
       const targetUserId = Number((req.params as { userId: string }).userId);
+      if (isNaN(targetUserId) || targetUserId <= 0) return reply.code(400).send({ error: 'invalid_id' });
 
       const [profile] = await db
         .select()

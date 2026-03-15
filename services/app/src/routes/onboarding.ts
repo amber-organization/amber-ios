@@ -319,17 +319,22 @@ export async function registerOnboardingRoutes(app: FastifyInstance) {
    * Public — no auth. Creates Stripe checkout with phone in metadata.
    * The /onboarding/web/webhook fires when payment completes → sends welcome iMessage.
    */
-  app.post('/onboarding/web/checkout', async (req: FastifyRequest, reply) => {
-    const { phone, priceKey, successUrl, cancelUrl, email, name } = req.body as {
-      phone: string;
-      priceKey: string;
-      successUrl: string;
-      cancelUrl: string;
-      email?: string;
-      name?: string;
-    };
+  const WebCheckoutSchema = z.object({
+    phone: z.string().min(7).max(20).regex(/^\+?[\d\s\-().]+$/, 'Invalid phone number'),
+    priceKey: z.string(),
+    successUrl: z.string().url(),
+    cancelUrl: z.string().url(),
+    email: z.string().email().optional(),
+    name: z.string().max(255).optional(),
+  });
 
-    if (!phone) return reply.code(400).send({ error: 'phone is required' });
+  app.post('/onboarding/web/checkout', async (req: FastifyRequest, reply) => {
+    const parsed = WebCheckoutSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid request', details: parsed.error.flatten().fieldErrors });
+    }
+    const { phone, priceKey, successUrl, cancelUrl, email, name } = parsed.data;
+
     const priceId = WEB_PRICES[priceKey];
     if (!priceId) return reply.code(400).send({ error: `Unknown plan: ${priceKey}` });
 
@@ -376,8 +381,8 @@ export async function registerOnboardingRoutes(app: FastifyInstance) {
     let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent((req as any).rawBody as Buffer, sig, secret);
-    } catch (err: any) {
-      return reply.code(400).send({ error: err.message });
+    } catch {
+      return reply.code(400).send({ error: 'Invalid webhook signature' });
     }
 
     if (event.type === 'checkout.session.completed') {

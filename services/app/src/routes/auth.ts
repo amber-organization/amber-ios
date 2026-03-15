@@ -63,7 +63,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         linkedAccounts: privyUser.linkedAccounts,
       };
     } catch (error: any) {
-      reply.code(401).send({ error: 'invalid_token', message: error?.message });
+      reply.code(401).send({ error: 'invalid_token', message: 'Token verification failed' });
     }
   });
 

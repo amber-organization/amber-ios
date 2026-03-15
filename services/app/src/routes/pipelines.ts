@@ -67,7 +67,7 @@ export async function registerPipelineRoutes(app: FastifyInstance) {
           endedAt: new Date(),
         })
         .where(eq(schema.pipelineRuns.id, run.id));
-      return reply.code(500).send({ runId: String(run.id), status: 'failed', error: e?.message || String(e) });
+      return reply.code(500).send({ runId: String(run.id), status: 'failed', error: 'Pipeline execution failed' });
     }
   });
 
@@ -80,6 +80,7 @@ export async function registerPipelineRoutes(app: FastifyInstance) {
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
       const { id: idStr } = req.params as { id: string }; const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
       const [run] = await db
         .select()
         .from(schema.pipelineRuns)

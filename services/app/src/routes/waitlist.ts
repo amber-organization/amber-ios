@@ -26,11 +26,11 @@ export async function registerWaitlistRoutes(app: FastifyInstance) {
         .values({ email, venture })
         .onConflictDoNothing();
     } catch (err) {
-      app.log.error({ err, email, venture }, 'Waitlist insert failed');
+      app.log.error({ err, venture }, 'Waitlist insert failed');
       return reply.code(500).send({ error: 'Failed to join waitlist' });
     }
 
-    app.log.info({ email, venture }, 'Waitlist signup');
+    app.log.info({ venture }, 'Waitlist signup');
     return { success: true };
   });
 }

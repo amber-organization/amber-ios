@@ -25,8 +25,16 @@ export async function POST(request: NextRequest) {
     const body: InviteBody = await request.json()
     const { orgId, email, role } = body
 
+    const VALID_ROLES = ['admin', 'reviewer'] as const
     if (!orgId || !email || !role) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+    if (!VALID_ROLES.includes(role as typeof VALID_ROLES[number])) {
+      return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return NextResponse.json({ error: 'Invalid email address' }, { status: 400 })
     }
 
     const sb = supabase as any

@@ -124,8 +124,8 @@ ${memoryContext}`;
       }
 
       send({ type: 'done' });
-    } catch (err: any) {
-      send({ type: 'error', message: err.message });
+    } catch {
+      send({ type: 'error', message: 'An error occurred' });
     }
 
     reply.raw.end();
