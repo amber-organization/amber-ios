@@ -136,13 +136,34 @@ See **SETUP.md** for env vars and full configuration.
 
 ---
 
+## Sub-Ventures
+
+Amber is a platform. These products are built on top of the Amber relationship and health graph:
+
+| Venture | What it is | Status |
+|---------|-----------|--------|
+| **Story** | Verified-real social network — no bots, no resharing, only things you actually lived | Live |
+| **D-NOB** | Private community for children fighting serious illness | Live |
+| **Marrow** | Club and organization recruiting OS — replaces Google Forms and spreadsheets | Live |
+| **FiduciaryOS** | AI financial advisor trained on fiduciary law with a cryptographic audit trail | Live |
+| **ClearOut** | AI inbox that writes replies in your voice and learns who matters to you | Live |
+| **Stillness** | Mental health platform — tracks your psychological state, powered by Amber's graph | Building |
+| **Remember** | Early detection for cognitive decline — watches the signals that precede Alzheimer's | Building |
+| **WEB** | Relationship CRM for real people — reminds you to reach out before too long passes | Building |
+| **Life Plan Assistant** | Maps your personality and values into a career path, roadmap, and daily habits | Building |
+| **Healthy Tech Index** | Every app and device rated by what it actually does to the people who use it | Building |
+
+The moat: each sub-venture deepens Amber's compounding personal dataset. The relationship graph, health metrics, behavioral data, and social patterns cannot be rebuilt from scratch by any competitor starting today.
+
+---
+
 ## Roadmap
 
 **Now:** iOS app (onboarding, contacts, personality, daily digests), backend API (auth, onboarding, signals, circles, memories, billing), iMessage agent (multi-user — Caleb and Sagar as User #1 and #2), web app (auth, onboarding, chat).
 
-**Next:** Stripe subscriptions live, real-time memory sync between agent + app, pgvector semantic search, worker memory extraction.
+**Next:** Stripe subscriptions live, real-time memory sync between agent + app, pgvector semantic search, WEB relationship CRM features, Stillness mental health dimension.
 
-**Future:** Web app, Android, public API, practitioner dashboard (Togari).
+**Future:** Remember cognitive monitoring, Life Plan Assistant, Healthy Tech Index ratings powered by aggregate Amber data, Android, public API.
 
 ---
 
