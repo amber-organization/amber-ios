@@ -23,16 +23,16 @@ export async function registerPipelineRoutes(app: FastifyInstance) {
    * POST /pipelines/run
    * Run a pipeline (for authenticated user)
    */
-  app.post('/pipelines/run', { preHandler: authenticate }, async (req: AuthenticatedRequest, _reply) => {
+  app.post('/pipelines/run', { preHandler: authenticate }, async (req: AuthenticatedRequest, reply) => {
     const body = PipelineSchema.parse(req.body);
     const { input, ...def } = body;
-    
+
     // Save pipeline definition
     const [pipelineDef] = await db
       .insert(schema.pipelineDefs)
       .values({ userId: req.userId!, name: def.name, def: def as any })
       .returning();
-    
+
     // Create run record
     const [run] = await db
       .insert(schema.pipelineRuns)
@@ -67,7 +67,7 @@ export async function registerPipelineRoutes(app: FastifyInstance) {
           endedAt: new Date(),
         })
         .where(eq(schema.pipelineRuns.id, run.id));
-      return { runId: String(run.id), status: 'failed', error: e?.message || String(e) };
+      return reply.code(500).send({ runId: String(run.id), status: 'failed', error: 'Pipeline execution failed' });
     }
   });
 
@@ -80,6 +80,7 @@ export async function registerPipelineRoutes(app: FastifyInstance) {
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
       const { id: idStr } = req.params as { id: string }; const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
       const [run] = await db
         .select()
         .from(schema.pipelineRuns)

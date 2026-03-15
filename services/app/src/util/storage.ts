@@ -9,8 +9,9 @@ export async function putJsonObject(params: { bucket?: string; key?: string; loc
   const bucket = params.bucket || config.storage.bucket;
   
   if (bucket && params.key && storage) {
+    const safeKey = params.key.replace(/\.\.\//g, '').replace(/^\//, '').replace(/\0/g, '');
     const gcsBucket = storage.bucket(bucket);
-    const file = gcsBucket.file(params.key);
+    const file = gcsBucket.file(safeKey);
     await file.save(body, {
       contentType: 'application/json',
       metadata: { contentType: 'application/json' },

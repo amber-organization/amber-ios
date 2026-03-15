@@ -31,6 +31,26 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         .limit(1);
 
       if (!user) {
+        // Check for provisional account with matching phone (created via iMessage onboarding)
+        const phone = (privyUser.linkedAccounts as any[])?.find((a: any) => a.type === 'phone')?.number;
+        if (phone) {
+          const [provisional] = await db
+            .select()
+            .from(schema.users)
+            .where(eq(schema.users.privyUserId, `loop:${phone}`))
+            .limit(1);
+          if (provisional) {
+            // Merge: update provisional user with real Privy ID
+            [user] = await db
+              .update(schema.users)
+              .set({ privyUserId: privyUser.id })
+              .where(eq(schema.users.id, provisional.id))
+              .returning();
+          }
+        }
+      }
+
+      if (!user) {
         [user] = await db
           .insert(schema.users)
           .values({ privyUserId: privyUser.id })
@@ -43,7 +63,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
         linkedAccounts: privyUser.linkedAccounts,
       };
     } catch (error: any) {
-      reply.code(401).send({ error: 'invalid_token', message: error?.message });
+      reply.code(401).send({ error: 'invalid_token', message: 'Token verification failed' });
     }
   });
 

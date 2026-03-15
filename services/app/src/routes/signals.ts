@@ -5,11 +5,31 @@
  * SIGNAL-04: Shared calendar event detection
  * SIGNAL-05: Questionnaire match signals
  */
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { db, schema } from '../db/client.js';
 import { eq, and, inArray, lte, gte, isNull } from 'drizzle-orm';
 import { authenticate, AuthenticatedRequest } from '../auth/middleware.js';
+import crypto from 'crypto';
+
+const AGENT_SECRET = process.env.AMBER_AGENT_SECRET;
+
+function authenticateAgent(req: FastifyRequest, reply: FastifyReply, done: () => void) {
+  const secret = req.headers['x-agent-secret'];
+  if (!AGENT_SECRET) {
+    reply.code(401).send({ error: 'unauthorized' });
+    return;
+  }
+  if (
+    secret === undefined ||
+    (secret as string).length !== AGENT_SECRET.length ||
+    !crypto.timingSafeEqual(Buffer.from(secret as string), Buffer.from(AGENT_SECRET))
+  ) {
+    reply.code(401).send({ error: 'unauthorized' });
+    return;
+  }
+  done();
+}
 
 const ReactSchema = z.object({
   action: z.enum(['acted', 'dismissed']),
@@ -82,6 +102,7 @@ export async function registerSignalRoutes(app: FastifyInstance) {
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
       const { id: idStr } = req.params as { id: string }; const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
       const [signal] = await db
         .select()
         .from(schema.signals)
@@ -108,6 +129,7 @@ export async function registerSignalRoutes(app: FastifyInstance) {
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
       const { id: idStr } = req.params as { id: string }; const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
       const { action } = ReactSchema.parse(req.body);
 
       const [signal] = await db
@@ -137,9 +159,20 @@ export async function registerSignalRoutes(app: FastifyInstance) {
   app.post(
     '/signals/ingest/contacts',
     { preHandler: authenticate },
-    async (req: AuthenticatedRequest) => {
-      const { contacts } = ContactBatchSchema.parse(req.body);
+    async (req: AuthenticatedRequest, reply: FastifyReply) => {
       const userId = req.userId!;
+
+      // PRIVACY-01: reject if user has opted out of contact sync
+      const [userRow] = await db
+        .select({ privacyTier: schema.users.privacyTier })
+        .from(schema.users)
+        .where(eq(schema.users.id, userId))
+        .limit(1);
+      if (!userRow || userRow.privacyTier === 'local_only') {
+        return reply.code(403).send({ error: 'Contact sync not permitted for this privacy tier' });
+      }
+
+      const { contacts } = ContactBatchSchema.parse(req.body);
       const now = new Date();
       const thisYear = now.getFullYear();
 
@@ -212,7 +245,7 @@ export async function registerSignalRoutes(app: FastifyInstance) {
             if (triggerDate < now) continue; // past — skip
 
             const dk = dedupeKey(userId, contactId, triggerTypes[i], triggerDate.toISOString().slice(0, 10));
-            await db
+            const result = await db
               .insert(schema.signals)
               .values({
                 userId,
@@ -223,8 +256,9 @@ export async function registerSignalRoutes(app: FastifyInstance) {
                 payload: { contactName: c.name },
                 dedupeKey: dk,
               })
-              .onConflictDoNothing();
-            signalsCreated++;
+              .onConflictDoNothing()
+              .returning({ id: schema.signals.id });
+            if (result.length > 0) signalsCreated++;
           }
         }
       }
@@ -240,9 +274,20 @@ export async function registerSignalRoutes(app: FastifyInstance) {
   app.post(
     '/signals/ingest/calendar',
     { preHandler: authenticate },
-    async (req: AuthenticatedRequest) => {
-      const { events } = CalendarEventSchema.parse(req.body);
+    async (req: AuthenticatedRequest, reply: FastifyReply) => {
       const userId = req.userId!;
+
+      // PRIVACY-01: reject if user has opted out of calendar sync
+      const [userRow] = await db
+        .select({ privacyTier: schema.users.privacyTier })
+        .from(schema.users)
+        .where(eq(schema.users.id, userId))
+        .limit(1);
+      if (!userRow || userRow.privacyTier === 'local_only') {
+        return reply.code(403).send({ error: 'Contact sync not permitted for this privacy tier' });
+      }
+
+      const { events } = CalendarEventSchema.parse(req.body);
       let signalsCreated = 0;
 
       // Resolve attendee external IDs → contact rows for this user
@@ -264,7 +309,7 @@ export async function registerSignalRoutes(app: FastifyInstance) {
           if (!contact) continue;
 
           const dk = dedupeKey(userId, contact.id, 'shared_calendar_event', event.eventId);
-          await db
+          const result = await db
             .insert(schema.signals)
             .values({
               userId,
@@ -275,8 +320,9 @@ export async function registerSignalRoutes(app: FastifyInstance) {
               payload: { eventId: event.eventId, eventTitle: event.title, contactName: contact.name },
               dedupeKey: dk,
             })
-            .onConflictDoNothing();
-          signalsCreated++;
+            .onConflictDoNothing()
+            .returning({ id: schema.signals.id });
+          if (result.length > 0) signalsCreated++;
         }
       }
 
@@ -327,7 +373,7 @@ export async function registerSignalRoutes(app: FastifyInstance) {
 
       let matched = 0;
       const matchTypes = [
-        { field: 'almaFkMater', label: 'alma mater' },
+        { field: 'almaMater', label: 'alma mater' },
         { field: 'hometown', label: 'hometown' },
         { field: 'currentCity', label: 'current city' },
       ] as const;
@@ -362,9 +408,11 @@ export async function registerSignalRoutes(app: FastifyInstance) {
    * POST /signals/dispatch
    * SIGNAL-02: Internal job endpoint — sends pending signals as APNs push notifications.
    * In production this is called by Cloud Tasks on a daily schedule.
+   * Authenticated via X-Agent-Secret (not user JWT — Cloud Tasks cannot provide one).
    */
-  app.post('/signals/dispatch', { preHandler: authenticate }, async (req: AuthenticatedRequest) => {
-    const userId = req.userId!;
+  app.post('/signals/dispatch', { preHandler: authenticateAgent }, async (req: FastifyRequest) => {
+    const { userId } = req.body as { userId: number };
+    if (!userId) return { dispatched: 0 };
     const now = new Date();
 
     const pending = await db
