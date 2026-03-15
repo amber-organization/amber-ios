@@ -26,6 +26,7 @@ const INTEGRATION_SECRETS: Record<string, string | undefined> = {
   clearout: process.env.CLEAROUT_WEBHOOK_SECRET,
   marrow: process.env.MARROW_WEBHOOK_SECRET,
   story: process.env.STORY_WEBHOOK_SECRET,
+  dnob: process.env.DNOB_WEBHOOK_SECRET,
 };
 
 // Which health dimensions each integration drives
@@ -34,6 +35,7 @@ const INTEGRATION_DIMENSIONS: Record<string, string[]> = {
   clearout:    ['social', 'emotional'],
   marrow:      ['social', 'financial'],
   story:       ['social', 'emotional'],
+  dnob:        ['emotional', 'social'],   // peer support → emotional + social belonging
 };
 
 // ── Score computation ────────────────────────────────────────────────────────

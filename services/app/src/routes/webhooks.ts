@@ -7,6 +7,7 @@
  *   • iOS (POST /chat — used by the iOS app)
  *
  * All surfaces read/write the same conversation history.
+ * All surfaces advance the same onboarding state machine.
  * Claude sees the same context and memory regardless of channel.
  */
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
@@ -14,12 +15,17 @@ import crypto from 'crypto';
 import { db, schema } from '../db/client.js';
 import { eq, desc } from 'drizzle-orm';
 import { authenticate, AuthenticatedRequest } from '../auth/middleware.js';
+import {
+  processOnboardingMessage,
+  getOrCreateOnboardingProgress,
+  STEP_PROMPTS,
+  type OnboardingStep,
+} from '../util/onboarding-engine.js';
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const LOOP_API_KEY = process.env.LOOP_API_KEY;
 const LOOP_SENDER_ID = process.env.LOOP_SENDER_ID;
 
-// How many recent messages to include in Claude context
 const HISTORY_WINDOW = 20;
 
 // ── Amber system prompt ──────────────────────────────────────────────────────
@@ -43,12 +49,12 @@ MEMORY OPERATIONS:
 - "Who do I know that..." → search context + memories, return matches
 
 USER CONTEXT:
-${userContext || 'No profile set up yet — ask the user for their name and city to get started.'}`;
+${userContext || 'No profile set up yet.'}`;
 }
 
 // ── Loop Message delivery ────────────────────────────────────────────────────
 
-async function sendLoopMessage(phone: string, text: string) {
+export async function sendLoopMessage(phone: string, text: string) {
   if (!LOOP_API_KEY || !LOOP_SENDER_ID) return;
   const res = await fetch('https://a.loopmessage.com/api/v1/message/send/', {
     method: 'POST',
@@ -90,7 +96,7 @@ async function callAmber(
   return data.content[0].text as string;
 }
 
-// ── Load user context from DB ────────────────────────────────────────────────
+// ── Load user context ────────────────────────────────────────────────────────
 
 async function loadUserContext(userId: number): Promise<string> {
   const [profile] = await db
@@ -106,7 +112,6 @@ async function loadUserContext(userId: number): Promise<string> {
   if (profile.currentCity) parts.push(`City: ${profile.currentCity}`);
   if (profile.almaMater) parts.push(`School: ${profile.almaMater}`);
 
-  // Load recent memories
   const memories = await db
     .select()
     .from(schema.memories)
@@ -125,9 +130,6 @@ async function loadUserContext(userId: number): Promise<string> {
 // ── Load conversation history ────────────────────────────────────────────────
 
 async function loadHistory(userId: number) {
-  // Pull recent messages from memories where source tracks conversation turns
-  // We use a simple jsonb field approach — messages stored in a conversations record
-  // For now, query the last N memories that were conversation turns
   const rows = await db
     .select()
     .from(schema.memories)
@@ -135,7 +137,6 @@ async function loadHistory(userId: number) {
     .orderBy(desc(schema.memories.createdAt))
     .limit(HISTORY_WINDOW);
 
-  // Reverse to chronological order and build message array
   return rows
     .filter((r) => r.source === 'imessage' || r.source === 'web' || r.source === 'ios')
     .reverse()
@@ -143,14 +144,12 @@ async function loadHistory(userId: number) {
       const parts: Array<{ role: 'user' | 'assistant'; content: string }> = [
         { role: 'user', content: r.rawContent },
       ];
-      if (r.summary) {
-        parts.push({ role: 'assistant', content: r.summary });
-      }
+      if (r.summary) parts.push({ role: 'assistant', content: r.summary });
       return parts;
     });
 }
 
-// ── Core: process one message turn ──────────────────────────────────────────
+// ── Core: process one normal message turn ────────────────────────────────────
 
 async function processMessage(
   userId: number,
@@ -162,7 +161,6 @@ async function processMessage(
     loadUserContext(userId),
   ]);
 
-  // Build messages array: history + current message
   const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
     ...history,
     { role: 'user', content: userText },
@@ -170,12 +168,11 @@ async function processMessage(
 
   const amberReply = await callAmber(messages, context);
 
-  // Store user message + amber reply as a memory turn
   await db.insert(schema.memories).values({
     userId,
     source: channel,
     rawContent: userText,
-    summary: amberReply, // store Amber's reply in summary field (conversation log)
+    summary: amberReply,
     isActionable: /remind|follow.?up|action|todo/i.test(userText),
     confidence: 90,
     privacyTier: 'selective',
@@ -184,16 +181,37 @@ async function processMessage(
   return amberReply;
 }
 
+// ── Create a provisional user from phone number ──────────────────────────────
+// Used when an unknown phone texts Amber for the first time.
+// When they later sign up via web/iOS, the phone field links the accounts.
+
+async function createProvisionalUser(phone: string): Promise<number> {
+  // auth0Id is 'imessage:<phone>' for provisional accounts
+  const [user] = await db
+    .insert(schema.users)
+    .values({ auth0Id: `imessage:${phone}` })
+    .returning();
+
+  await db.insert(schema.userProfiles).values({ userId: user.id, phone });
+
+  await getOrCreateOnboardingProgress(user.id);
+
+  return user.id;
+}
+
 // ── Route registration ───────────────────────────────────────────────────────
 
 export async function registerWebhookRoutes(app: FastifyInstance) {
   /**
    * POST /webhooks/loop-message
    * Loop Message sends inbound iMessages here.
-   * Looks up user by phone, calls Claude, replies via Loop Message.
+   *
+   * Full flow:
+   *   1. Unknown phone → create provisional user → start onboarding
+   *   2. Known user in onboarding → advance onboarding state machine
+   *   3. Known user, onboarding complete → normal Amber conversation
    */
   app.post('/webhooks/loop-message', async (req: FastifyRequest, reply: FastifyReply) => {
-    // Signature verification
     const sig = req.headers['loop-signature'] as string | undefined;
     const secret = process.env.LOOP_WEBHOOK_SECRET;
     if (secret && sig) {
@@ -215,32 +233,44 @@ export async function registerWebhookRoutes(app: FastifyInstance) {
 
     app.log.info({ contact, message_id }, 'iMessage inbound');
 
-    // Resolve userId from phone number
-    const [sub] = await db
-      .select()
-      .from(schema.subscriptions)
-      .where(eq(schema.subscriptions.stripeCustomerId, contact)) // fallback
-      .limit(1);
-
-    // Try userProfiles.phone field if we have it, otherwise use subscription lookup
-    const [profileByPhone] = await db
+    // Resolve user by phone
+    let [profileByPhone] = await db
       .select()
       .from(schema.userProfiles)
-      .where(eq((schema.userProfiles as any).phone ?? schema.userProfiles.userId, contact))
-      .limit(1)
-      .catch(() => [undefined]);
+      .where(eq(schema.userProfiles.phone, contact))
+      .limit(1);
 
-    const userId = profileByPhone?.userId ?? sub?.userId;
+    let userId = profileByPhone?.userId;
 
+    // Unknown phone — create provisional user and start onboarding
     if (!userId) {
-      app.log.warn({ contact }, 'Unknown phone — no user found, skipping');
+      app.log.info({ contact }, 'New phone — creating provisional user');
+      userId = await createProvisionalUser(contact);
+      try {
+        await sendLoopMessage(contact, STEP_PROMPTS.welcome);
+      } catch (err: any) {
+        app.log.error({ err }, 'Failed to send welcome iMessage');
+      }
       return;
     }
 
+    // Check onboarding state
+    const progress = await getOrCreateOnboardingProgress(userId);
+    const currentStep = progress.currentStep as OnboardingStep;
+
     try {
-      const amberReply = await processMessage(userId, text, 'imessage');
-      await sendLoopMessage(contact, amberReply);
-      app.log.info({ contact }, 'iMessage reply sent');
+      let reply_text: string;
+
+      if (currentStep !== 'complete') {
+        // Still onboarding — run through the state machine
+        reply_text = await processOnboardingMessage(userId, currentStep, text);
+      } else {
+        // Normal conversation
+        reply_text = await processMessage(userId, text, 'imessage');
+      }
+
+      await sendLoopMessage(contact, reply_text);
+      app.log.info({ contact, currentStep }, 'iMessage reply sent');
     } catch (err: any) {
       app.log.error({ err }, 'Failed to process iMessage');
       await sendLoopMessage(contact, "I hit a snag — try again in a moment.").catch(() => {});
@@ -249,8 +279,8 @@ export async function registerWebhookRoutes(app: FastifyInstance) {
 
   /**
    * POST /chat
-   * Authenticated endpoint used by the web app and iOS app.
-   * Same Amber, same conversation history as iMessage.
+   * Authenticated endpoint used by web and iOS.
+   * Same Amber, same conversation history, same onboarding state.
    */
   app.post('/chat', { preHandler: authenticate }, async (req: AuthenticatedRequest, reply: FastifyReply) => {
     const { message, channel = 'web' } = req.body as {
@@ -260,8 +290,18 @@ export async function registerWebhookRoutes(app: FastifyInstance) {
 
     if (!message?.trim()) return reply.code(400).send({ error: 'message is required' });
 
+    const progress = await getOrCreateOnboardingProgress(req.userId!);
+    const currentStep = progress.currentStep as OnboardingStep;
+
     try {
-      const amberReply = await processMessage(req.userId!, message, channel);
+      let amberReply: string;
+
+      if (currentStep !== 'complete') {
+        amberReply = await processOnboardingMessage(req.userId!, currentStep, message);
+      } else {
+        amberReply = await processMessage(req.userId!, message, channel);
+      }
+
       return { reply: amberReply };
     } catch (err: any) {
       app.log.error({ err }, 'Chat error');
@@ -288,9 +328,7 @@ export async function registerWebhookRoutes(app: FastifyInstance) {
         const turns: Array<{ role: string; content: string; ts: Date }> = [
           { role: 'user', content: r.rawContent, ts: r.createdAt! },
         ];
-        if (r.summary) {
-          turns.push({ role: 'amber', content: r.summary, ts: r.createdAt! });
-        }
+        if (r.summary) turns.push({ role: 'amber', content: r.summary, ts: r.createdAt! });
         return turns;
       });
   });

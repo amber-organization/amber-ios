@@ -54,9 +54,10 @@ export const userProfiles = pgTable('user_profiles', {
   birthday: timestamp('birthday', { withTimezone: true }),       // date + time for horoscope
   birthdayLocation: varchar('birthday_location', { length: 255 }), // city of birth for rising sign
   horoscopeSign: varchar('horoscope_sign', { length: 50 }),     // auto-derived
-  almaFkMater: varchar('alma_mater', { length: 255 }),
+  almaMater: varchar('alma_mater', { length: 255 }),
   hometown: varchar('hometown', { length: 255 }),
   currentCity: varchar('current_city', { length: 255 }),
+  phone: varchar('phone', { length: 30 }).unique(),   // E.164 e.g. +14155551234 — used for iMessage lookup
   onboardingComplete: boolean('onboarding_complete').default(false).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
@@ -356,6 +357,7 @@ export const integrationSourceEnum = pgEnum('integration_source', [
   'clearout',    // Social + Emotional — communication patterns, inbox load
   'marrow',      // Social + Professional — org network, recruiting involvement
   'story',       // Social + Emotional — circles, daily prompts, human connection
+  'dnob',        // Emotional + Social — peer support, community belonging
   'apple_health',
   'google_calendar',
   'instagram',
@@ -417,4 +419,61 @@ export const subscriptions = pgTable('subscriptions', {
   cancelAtPeriodEnd: boolean('cancel_at_period_end').default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ─── Agent (macOS operator) ───────────────────────────────────────────────────
+// Amber's desktop agent: takes over macOS to execute multi-step tasks,
+// sends morning briefs, and logs every action for debuggability.
+
+export const agentTaskStatusEnum = pgEnum('agent_task_status', [
+  'queued', 'running', 'waiting_approval', 'completed', 'failed', 'cancelled',
+]);
+
+export const agentTasks = pgTable('agent_tasks', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  prompt: text('prompt').notNull(),                    // natural language instruction
+  status: agentTaskStatusEnum('status').default('queued').notNull(),
+  plan: jsonb('plan').$type<string[]>(),               // Claude's step-by-step plan
+  steps: jsonb('steps').$type<Array<{                  // execution log
+    step: number;
+    action: string;
+    tool: string;
+    result: string;
+    screenshotUrl?: string;
+    completedAt: string;
+  }>>().default([]),
+  result: text('result'),                              // final output / summary
+  errorMessage: text('error_message'),
+  approvalRequired: boolean('approval_required').default(false),
+  approvalPrompt: text('approval_prompt'),             // what Amber is asking permission to do
+  approvedAt: timestamp('approved_at', { withTimezone: true }),
+  channel: varchar('channel', { length: 20 }).default('web'), // 'web' | 'ios' | 'imessage'
+  briefDate: varchar('brief_date', { length: 20 }),   // set for morning brief tasks (YYYY-MM-DD)
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+});
+
+// ── Magic link tokens — for iMessage-only users ──────────────────────────────
+// Short-lived tokens that authenticate actions without a web session.
+// Purpose values: 'auth' | 'connect_integration' | 'approve_task' | 'checkout'
+
+export const magicLinkPurposeEnum = pgEnum('magic_link_purpose', [
+  'auth',               // create/log into account from iMessage
+  'connect_integration', // connect a third-party integration
+  'approve_task',       // approve a pending agent task
+  'checkout',           // complete Stripe subscription checkout
+]);
+
+export const magicLinkTokens = pgTable('magic_link_tokens', {
+  id: serial('id').primaryKey(),
+  token: varchar('token', { length: 128 }).notNull().unique(),
+  userId: integer('user_id').references(() => users.id),  // null until account created
+  phone: varchar('phone', { length: 30 }),                // E.164 — for pre-account flow
+  purpose: magicLinkPurposeEnum('purpose').notNull(),
+  metadata: jsonb('metadata'),                            // e.g. { source, taskId }
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  usedAt: timestamp('used_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
