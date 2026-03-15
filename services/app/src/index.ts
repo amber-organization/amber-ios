@@ -15,6 +15,7 @@ import { registerOnboardingRoutes } from './routes/onboarding.js';
 import { registerPrivacyRoutes } from './routes/privacy.js';
 import { registerSignalRoutes } from './routes/signals.js';
 import { registerCircleRoutes } from './routes/circles.js';
+import { registerProfileRoutes } from './routes/profile.js';
 import { handleError } from './util/errors.js';
 import './pipeline/nodes/registry.js';
 
@@ -48,6 +49,8 @@ await app.register(registerAiRoutes);
 await app.register(registerIdentityRoutes);
 await app.register(registerAnchorRoutes);
 await app.register(registerInsightRoutes);
+await app.register(registerOnboardingRoutes);
+await app.register(registerProfileRoutes);
 
 // Sprint 1 MVP
 await app.register(registerOnboardingRoutes); // ONBOARD-01/02
