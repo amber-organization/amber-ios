@@ -223,7 +223,7 @@ export async function registerSignalRoutes(app: FastifyInstance) {
             if (triggerDate < now) continue; // past — skip
 
             const dk = dedupeKey(userId, contactId, triggerTypes[i], triggerDate.toISOString().slice(0, 10));
-            await db
+            const result = await db
               .insert(schema.signals)
               .values({
                 userId,
@@ -234,8 +234,9 @@ export async function registerSignalRoutes(app: FastifyInstance) {
                 payload: { contactName: c.name },
                 dedupeKey: dk,
               })
-              .onConflictDoNothing();
-            signalsCreated++;
+              .onConflictDoNothing()
+              .returning({ id: schema.signals.id });
+            if (result.length > 0) signalsCreated++;
           }
         }
       }
@@ -275,7 +276,7 @@ export async function registerSignalRoutes(app: FastifyInstance) {
           if (!contact) continue;
 
           const dk = dedupeKey(userId, contact.id, 'shared_calendar_event', event.eventId);
-          await db
+          const result = await db
             .insert(schema.signals)
             .values({
               userId,
@@ -286,8 +287,9 @@ export async function registerSignalRoutes(app: FastifyInstance) {
               payload: { eventId: event.eventId, eventTitle: event.title, contactName: contact.name },
               dedupeKey: dk,
             })
-            .onConflictDoNothing();
-          signalsCreated++;
+            .onConflictDoNothing()
+            .returning({ id: schema.signals.id });
+          if (result.length > 0) signalsCreated++;
         }
       }
 

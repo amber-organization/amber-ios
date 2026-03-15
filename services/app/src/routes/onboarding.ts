@@ -146,7 +146,7 @@ export async function registerOnboardingRoutes(app: FastifyInstance) {
         }
         case 'birthday': {
           const b = body as z.infer<typeof stepSchemas.birthday>;
-          profileUpdate = { birthday: new Date(b.birthday), birthdayTime: b.birthdayTime, birthLocation: b.birthLocation };
+          profileUpdate = { birthday: new Date(b.birthday), birthdayTime: b.birthdayTime, birthdayLocation: b.birthLocation };
           break;
         }
         case 'location': {

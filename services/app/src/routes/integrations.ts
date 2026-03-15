@@ -204,13 +204,15 @@ export async function registerIntegrationRoutes(app: FastifyInstance) {
         return reply.code(400).send({ error: `Unknown integration: ${source}` });
       }
 
-      // Verify webhook secret if configured
+      // Require webhook secret — reject unauthenticated signal pushes
       const secret = INTEGRATION_SECRETS[source];
-      if (secret) {
-        const provided = req.headers['x-amber-webhook-secret'] as string | undefined;
-        if (provided !== secret) {
-          return reply.code(401).send({ error: 'Invalid webhook secret' });
-        }
+      if (!secret) {
+        app.log.error({ source }, 'Integration webhook secret not configured');
+        return reply.code(500).send({ error: 'Integration not configured' });
+      }
+      const provided = req.headers['x-amber-webhook-secret'] as string | undefined;
+      if (provided !== secret) {
+        return reply.code(401).send({ error: 'Invalid webhook secret' });
       }
 
       const amberId = req.headers['x-amber-user-id'] as string | undefined;
@@ -219,6 +221,9 @@ export async function registerIntegrationRoutes(app: FastifyInstance) {
       }
 
       const userId = Number(amberId);
+      if (isNaN(userId) || userId <= 0) {
+        return reply.code(400).send({ error: 'Invalid X-Amber-User-Id' });
+      }
       const payload = req.body as Record<string, any>;
 
       // Update lastSyncedAt

@@ -219,10 +219,15 @@ export async function registerWebhookRoutes(app: FastifyInstance) {
   app.post('/webhooks/loop-message', async (req: FastifyRequest, reply: FastifyReply) => {
     const sig = req.headers['loop-signature'] as string | undefined;
     const secret = process.env.LOOP_WEBHOOK_SECRET;
-    if (secret && sig) {
-      const expected = crypto.createHmac('sha256', secret).update(JSON.stringify(req.body)).digest('hex');
-      if (sig !== expected) return reply.code(401).send({ error: 'Invalid signature' });
+    if (!secret) {
+      app.log.error('LOOP_WEBHOOK_SECRET not set — refusing webhook');
+      return reply.code(500).send({ error: 'Webhook not configured' });
     }
+    if (!sig) {
+      return reply.code(401).send({ error: 'Missing loop-signature header' });
+    }
+    const expected = crypto.createHmac('sha256', secret).update(JSON.stringify(req.body)).digest('hex');
+    if (sig !== expected) return reply.code(401).send({ error: 'Invalid signature' });
 
     const { event, contact, text, message_id } = req.body as {
       event: string;

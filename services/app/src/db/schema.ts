@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, jsonb, varchar, integer, pgEnum, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, timestamp, jsonb, varchar, integer, pgEnum, boolean, unique } from 'drizzle-orm/pg-core';
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
@@ -142,7 +142,9 @@ export const circleMembers = pgTable('circle_members', {
   circleId: integer('circle_id').references(() => circles.id).notNull(),
   userId: integer('user_id').references(() => users.id).notNull(),
   joinedAt: timestamp('joined_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}, (t) => ({
+  circleUserUnique: unique().on(t.circleId, t.userId),
+}));
 
 // ─── Legacy tables (kept for backwards compat) ────────────────────────────────
 
@@ -490,7 +492,9 @@ export const magicLinkTokens = pgTable('magic_link_tokens', {
 
 export const waitlistEntries = pgTable('waitlist_entries', {
   id: serial('id').primaryKey(),
-  email: varchar('email', { length: 255 }).notNull().unique(),
+  email: varchar('email', { length: 255 }).notNull(),
   venture: varchar('venture', { length: 100 }).notNull().default('amber'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}, (t) => ({
+  emailVentureUnique: unique().on(t.email, t.venture),
+}));

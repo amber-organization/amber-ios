@@ -27,6 +27,8 @@ export type RelationshipType =
 export type MemorySource =
   | 'manual_note'
   | 'imessage'
+  | 'web'
+  | 'ios'
   | 'email'
   | 'call'
   | 'meeting'

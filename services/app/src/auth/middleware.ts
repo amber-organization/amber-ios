@@ -130,6 +130,8 @@ export async function optionalAuth(
   }
 
   const token = authHeader.slice(7);
+
+  // Try Privy first (iOS)
   try {
     const privyUser = await verifyPrivyToken(token);
     const [user] = await db
@@ -137,10 +139,26 @@ export async function optionalAuth(
       .from(schema.users)
       .where(eq(schema.users.privyUserId, privyUser.id))
       .limit(1);
-
     if (user) {
       request.userId = user.id;
       request.privyUserId = privyUser.id;
+    }
+    return;
+  } catch {
+    // Not a Privy token — try Auth0
+  }
+
+  // Try Auth0 (web)
+  try {
+    const decoded = await verifyAuth0Token(token);
+    const [user] = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.auth0UserId, decoded.sub))
+      .limit(1);
+    if (user) {
+      request.userId = user.id;
+      request.auth0UserId = decoded.sub;
     }
   } catch {
     // Ignore errors for optional auth

@@ -33,6 +33,18 @@ const app = Fastify({
   disableRequestLogging: false,
 });
 
+// Raw body capture — required for Stripe webhook signature verification.
+// Fastify's JSON parser is replaced with one that also stores the raw Buffer on req.rawBody.
+app.addContentTypeParser('application/json', { parseAs: 'buffer' }, function (_req, body, done) {
+  try {
+    const parsed = JSON.parse((body as Buffer).toString());
+    (_req as any).rawBody = body;
+    done(null, parsed);
+  } catch (err: any) {
+    done(err, undefined);
+  }
+});
+
 // CORS
 await app.register(cors, {
   origin: [

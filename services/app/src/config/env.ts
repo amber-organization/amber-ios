@@ -26,8 +26,9 @@ export const config = {
 
   // Auth0
   auth0: {
-    domain: optionalEnv('AUTH0_DOMAIN', 'dev-4prs757badfajpi5.us.auth0.com')!,
-    clientId: optionalEnv('AUTH0_CLIENT_ID', 'ytP3na2gIO9Wpsc4cEt1klmSbPF4ZAIe')!,
+    domain: optionalEnv('AUTH0_DOMAIN')!,
+    clientId: optionalEnv('AUTH0_CLIENT_ID')!,
+    audience: optionalEnv('AUTH0_AUDIENCE', 'https://api.amber.app')!,
   },
 
   // Database
@@ -94,9 +95,13 @@ export const config = {
   isProduction: optionalEnv('NODE_ENV', 'development') === 'production',
 };
 
-// In production, Privy must be configured
+// In production, critical env vars must be set
 if (config.isProduction) {
   requireEnv('PRIVY_APP_ID');
   requireEnv('PRIVY_APP_SECRET');
   requireEnv('DATABASE_URL');
+  requireEnv('STRIPE_SECRET_KEY');
+  requireEnv('STRIPE_WEBHOOK_SECRET');
+  requireEnv('AMBER_AGENT_SECRET');
+  requireEnv('LOOP_WEBHOOK_SECRET');
 }
