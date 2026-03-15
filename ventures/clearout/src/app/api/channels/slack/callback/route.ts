@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { exchangeSlackCodeForTokens, getSlackWorkspaceInfo } from "@/lib/slack/client"
+import { encrypt } from "@/lib/crypto"
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -45,7 +46,7 @@ export async function GET(request: Request) {
         type: "slack",
         display_name: teamName ?? "Slack",
         account_id: authedUser.id,
-        access_token: workspaceToken,
+        access_token: encrypt(workspaceToken),
         workspace_id: teamId,
         workspace_name: teamName,
         is_active: true,

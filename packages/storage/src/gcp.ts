@@ -9,13 +9,21 @@ let storageClient: Storage | null = null
 
 function getStorage(): Storage {
   if (!storageClient) {
+    let credentials: Record<string, any> | undefined;
+    if (process.env.GCP_SERVICE_ACCOUNT_JSON) {
+      try {
+        const raw = process.env.GCP_SERVICE_ACCOUNT_JSON;
+        if (!raw) throw new Error('GCP_SERVICE_ACCOUNT_JSON is not set');
+        credentials = JSON.parse(raw);
+      } catch (err: any) {
+        throw new Error(`Failed to parse GCP_SERVICE_ACCOUNT_JSON: ${err.message}`);
+      }
+    }
     storageClient = new Storage({
       projectId: process.env.GCP_PROJECT_ID,
       keyFilename: process.env.GCP_KEY_FILE,
       // Or use Application Default Credentials (recommended on Railway via env var)
-      credentials: process.env.GCP_SERVICE_ACCOUNT_JSON
-        ? JSON.parse(process.env.GCP_SERVICE_ACCOUNT_JSON)
-        : undefined
+      credentials,
     })
   }
   return storageClient

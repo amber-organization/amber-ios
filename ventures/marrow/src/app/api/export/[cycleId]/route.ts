@@ -199,7 +199,8 @@ export async function GET(
     // ── CSV response ───────────────────────────────────────────────────────────
     if (format === 'csv') {
       const csv = Papa.unparse(rows, { header: true })
-      const filename = `${cycle.name.replace(/\s+/g, '_')}_export_${new Date().toISOString().split('T')[0]}.csv`
+      const safeFilename = cycle.name.replace(/[^a-zA-Z0-9\-_]/g, '_');
+      const filename = `${safeFilename}_export_${new Date().toISOString().split('T')[0]}.csv`
 
       return new NextResponse(csv, {
         status: 200,

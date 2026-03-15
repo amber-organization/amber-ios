@@ -9,6 +9,7 @@
  */
 
 import { createServer } from 'http'
+import crypto from 'crypto'
 import { PORT, USERS_BY_PHONE } from './config.js'
 import { loadContext } from './context.js'
 import { buildSystemPrompt } from './prompts.js'
@@ -19,7 +20,28 @@ import { getHistory, addUserMessage, addAssistantMessage } from './conversation.
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
-const seenMessageIds = new Set<string>()
+const seenMessageIds = new Map<string, number>();
+const DEDUP_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+function isDuplicate(messageId: string): boolean {
+  const now = Date.now();
+  // Evict expired entries
+  for (const [id, ts] of seenMessageIds) {
+    if (now - ts > DEDUP_TTL_MS) seenMessageIds.delete(id);
+  }
+  if (seenMessageIds.has(messageId)) return true;
+  seenMessageIds.set(messageId, now);
+  return false;
+}
+
+function redactPhone(phone: string): string {
+  if (!phone || phone.length < 5) return '***';
+  // Keep country code prefix (+1, +44, etc.) and last 4 digits
+  const match = phone.match(/^(\+\d{1,3}).*(\d{4})$/);
+  if (match) return `${match[1]}***${match[2]}`;
+  return `***${phone.slice(-4)}`;
+}
+
 let requestCount = 0
 const startTime = Date.now()
 
@@ -38,22 +60,16 @@ async function handleInbound(payload: LoopWebhookPayload): Promise<void> {
 
   // Deduplicate
   if (message_id) {
-    if (seenMessageIds.has(message_id)) {
+    if (isDuplicate(message_id)) {
       console.log(`[webhook] duplicate message_id ${message_id}, skipping`)
       return
-    }
-    seenMessageIds.add(message_id)
-    // Keep the set bounded
-    if (seenMessageIds.size > 1000) {
-      const first = seenMessageIds.values().next().value as string
-      seenMessageIds.delete(first)
     }
   }
 
   // Route to user
   const user = USERS_BY_PHONE.get(contact)
   if (!user) {
-    console.warn(`[webhook] unknown phone ${contact} — no user configured`)
+    console.warn(`[webhook] unknown phone ${redactPhone(contact)} — no user configured`)
     return
   }
 
@@ -89,6 +105,35 @@ const server = createServer((req, res) => {
     let body = ''
     req.on('data', chunk => { body += chunk.toString() })
     req.on('end', () => {
+      // HMAC signature verification
+      const secret = process.env.LOOP_WEBHOOK_SECRET;
+      if (secret) {
+        const sig = req.headers['loop-signature'] as string | undefined;
+        if (!sig) {
+          res.writeHead(401, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: 'Missing signature' }))
+          return
+        }
+        let parsedBody: unknown
+        try {
+          parsedBody = JSON.parse(body)
+        } catch {
+          res.writeHead(400, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: 'Invalid JSON' }))
+          return
+        }
+        const expected = crypto.createHmac('sha256', secret)
+          .update(JSON.stringify(parsedBody))
+          .digest('hex');
+        const sigBuf = Buffer.from(sig)
+        const expBuf = Buffer.from(expected)
+        if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+          res.writeHead(401, { 'Content-Type': 'application/json' })
+          res.end(JSON.stringify({ error: 'Invalid signature' }))
+          return
+        }
+      }
+
       // Respond immediately so Loop doesn't retry
       res.writeHead(200, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify({ received: true }))
@@ -115,14 +160,10 @@ const server = createServer((req, res) => {
   }
 
   if (req.url === '/health') {
-    const users = Array.from(USERS_BY_PHONE.values()).map(u => u.name)
     res.writeHead(200, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({
-      status: 'running',
-      service: 'amber-imessage-agent',
-      users,
-      requestCount,
-      uptimeSeconds: Math.floor((Date.now() - startTime) / 1000),
+      status: 'ok',
+      uptime: process.uptime(),
     }))
     return
   }
@@ -132,7 +173,7 @@ const server = createServer((req, res) => {
 })
 
 server.listen(PORT, () => {
-  const users = Array.from(USERS_BY_PHONE.values()).map(u => `${u.name} (${u.phone})`).join(', ')
+  const users = Array.from(USERS_BY_PHONE.values()).map(u => `${u.name} (${redactPhone(u.phone)})`).join(', ')
   console.log(`🌟 Amber iMessage Agent`)
   console.log(`   Listening on :${PORT}`)
   console.log(`   Users: ${users}`)

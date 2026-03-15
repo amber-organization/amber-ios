@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const PUBLIC = ["/login", "/api/auth/login", "/onboarding", "/api/cron"];
+const PUBLIC = ["/login", "/api/auth/login", "/onboarding"];
 const COOKIE = "fiduciary_session";
 
 export async function middleware(req: NextRequest) {

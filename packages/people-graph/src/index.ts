@@ -10,6 +10,10 @@ export interface SearchDeps {
   claudeApiKey: string
 }
 
+function escapeIlike(str: string): string {
+  return str.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+}
+
 export interface SearchOptions {
   query: string
   userId: string
@@ -30,7 +34,7 @@ export async function searchPeople(
   const { query, userId, limit = 5, trustMinimum, location, tags } = options
 
   // 1. Classify query intent
-  const intent = await classifySearchIntent(query, deps.claudeApiKey)
+  const intent = await classifySearchIntent(query)
 
   // 2. Generate query embedding
   const embedding = await getQueryEmbedding(query)
@@ -48,7 +52,7 @@ export async function searchPeople(
 
   if (location) {
     conditions.push(`p.location ILIKE $${paramIdx}`)
-    params.push(`%${location}%`)
+    params.push(`%${escapeIlike(location)}%`)
     paramIdx++
   }
 
@@ -117,7 +121,7 @@ export async function searchPeople(
   return results
 }
 
-async function classifySearchIntent(query: string, apiKey: string): Promise<string> {
+async function classifySearchIntent(query: string): Promise<string> {
   // Quick intent classification
   const lower = query.toLowerCase()
   if (lower.includes('retreat') || lower.includes('invite')) return 'retreat_invite'

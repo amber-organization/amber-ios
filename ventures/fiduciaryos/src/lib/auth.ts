@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 export const COOKIE_NAME = "fiduciary_session";
 const secret = () => {
@@ -10,7 +11,8 @@ const secret = () => {
 };
 
 export async function createSessionToken(): Promise<string> {
-  return new SignJWT({ sub: "fiduciaryos" })
+  const jti = crypto.randomBytes(16).toString("hex");
+  return new SignJWT({ sub: "fiduciaryos", jti })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")

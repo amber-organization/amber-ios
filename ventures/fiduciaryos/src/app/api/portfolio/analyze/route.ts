@@ -9,11 +9,14 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
   try {
     const res = await fetch(`${PYTHON_API}/portfolio/analyze`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
@@ -27,5 +30,7 @@ export async function POST(req: NextRequest) {
       recommendations: [],
       policy_valid: false,
     }, { status: 200 });
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
