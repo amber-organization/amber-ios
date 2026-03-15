@@ -39,6 +39,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const VALID_RECIPIENT_TYPES: RecipientType[] = ['all', 'stage', 'status', 'individual']
+    if (!VALID_RECIPIENT_TYPES.includes(recipient_type)) {
+      return NextResponse.json({ error: 'Invalid recipient_type' }, { status: 400 })
+    }
+    if (typeof subject !== 'string' || subject.length > 500) {
+      return NextResponse.json({ error: 'subject must be a string under 500 chars' }, { status: 400 })
+    }
+    if (typeof messageBody !== 'string' || messageBody.length > 50_000) {
+      return NextResponse.json({ error: 'body must be a string under 50000 chars' }, { status: 400 })
+    }
+    if (Array.isArray(recipient_filter) && recipient_filter.length > 500) {
+      return NextResponse.json({ error: 'recipient_filter too large' }, { status: 400 })
+    }
+
     // Fetch cycle + org
     const { data: cycle, error: cycleError } = await supabase
       .from('cycles')

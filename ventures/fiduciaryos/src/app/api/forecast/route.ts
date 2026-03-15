@@ -8,9 +8,11 @@ export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
   if (!auth.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const rawText = await req.text();
+  if (rawText.length > 100_000) return NextResponse.json({ error: "Request too large" }, { status: 413 });
   let profile: FinancialProfile, mode: "deterministic" | "monte_carlo", scenario: Scenario;
   try {
-    ({ profile, mode, scenario } = await req.json());
+    ({ profile, mode, scenario } = JSON.parse(rawText));
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }

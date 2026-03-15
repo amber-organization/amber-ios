@@ -37,7 +37,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: "No channels to sync", synced: 0 })
   }
 
-  const results: Array<{ channelId: string; status: string; error?: string }> = []
+  const results: Array<{ channelId: string; status: string }> = []
 
   for (const channel of channels) {
     try {
@@ -53,10 +53,10 @@ export async function GET(request: Request) {
         results.push({ channelId: channel.id, status: "synced" })
       }
     } catch (err) {
+      console.error(`[cron/sync] channel ${channel.id} failed:`, err)
       results.push({
         channelId: channel.id,
         status: "error",
-        error: String(err),
       })
     }
   }
@@ -65,6 +65,5 @@ export async function GET(request: Request) {
     message: "Cron sync complete",
     synced: results.filter(r => r.status === "synced").length,
     errors: results.filter(r => r.status === "error").length,
-    results,
   })
 }

@@ -249,18 +249,19 @@ export async function registerWebhookRoutes(app: FastifyInstance) {
       return reply.code(500).send({ error: 'Server misconfiguration' });
     }
     const expected = crypto.createHmac('sha256', secret).update(rawPayload).digest('hex');
-    const sigBuf = Buffer.from(sig);
-    const expBuf = Buffer.from(expected);
-    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+    const sigBuf = Buffer.from(sig.trim(), 'hex');
+    const expBuf = Buffer.from(expected, 'hex');
+    if (sigBuf.length === 0 || sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
       return reply.code(401).send({ error: 'Invalid signature' });
     }
 
-    const { event, contact, text, message_id } = req.body as {
+    const { event, contact, text: rawText, message_id } = req.body as {
       event: string;
       contact: string;
       text: string;
       message_id: string;
     };
+    const text = typeof rawText === 'string' ? rawText.slice(0, 4000) : '';
 
     // Acknowledge immediately — Loop expects a fast 200
     reply.code(200).send({ ok: true });

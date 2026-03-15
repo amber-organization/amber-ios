@@ -99,6 +99,17 @@ export async function PUT(
       )
     }
 
+    const VALID_STATUSES: ApplicationStatus[] = ['pending', 'under_review', 'advancing', 'accepted', 'rejected', 'waitlisted', 'withdrawn']
+    if (newStatus && !VALID_STATUSES.includes(newStatus)) {
+      return NextResponse.json({ error: 'Invalid status value' }, { status: 400 })
+    }
+    if (newStageId && !/^[0-9a-f-]{36}$/.test(newStageId)) {
+      return NextResponse.json({ error: 'Invalid stage_id format' }, { status: 400 })
+    }
+    if (note && (typeof note !== 'string' || note.length > 2000)) {
+      return NextResponse.json({ error: 'note must be a string under 2000 chars' }, { status: 400 })
+    }
+
     const previousStatus = application.status
     const previousStageId = application.current_stage_id
 
