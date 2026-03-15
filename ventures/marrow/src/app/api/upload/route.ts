@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
 
     // Build storage path: {userId}/{timestamp}_{sanitizedName}
     const timestamp = Date.now()
-    const safeName = sanitizeFilename(file.name)
+    const safeName = sanitizeFilename(file.name).slice(0, 100) || 'file'
     const storagePath = `${user.id}/${timestamp}_${safeName}`
 
     const buffer = await file.arrayBuffer()

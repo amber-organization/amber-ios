@@ -29,11 +29,14 @@ export async function POST(request: NextRequest) {
     if (!orgId || !email || !role) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
+    if (typeof orgId !== 'string' || orgId.length > 36) {
+      return NextResponse.json({ error: 'Invalid orgId' }, { status: 400 })
+    }
     if (!VALID_ROLES.includes(role as typeof VALID_ROLES[number])) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
+    if (typeof email !== 'string' || email.length > 254 || !emailRegex.test(email)) {
       return NextResponse.json({ error: 'Invalid email address' }, { status: 400 })
     }
 

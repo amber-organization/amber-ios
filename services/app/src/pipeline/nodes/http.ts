@@ -29,7 +29,21 @@ registerNode('http.fetch', async (_input, cfg) => {
   const timeoutId = setTimeout(() => controller.abort(), 10000);
   try {
     const res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined, signal: controller.signal });
-    const text = await res.text();
+    // Cap response body at 1 MB to prevent memory DoS from large remote responses
+    const MAX_RESPONSE_BYTES = 1024 * 1024;
+    const reader = res.body?.getReader();
+    let text = '';
+    if (reader) {
+      let totalBytes = 0;
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        totalBytes += value.byteLength;
+        if (totalBytes > MAX_RESPONSE_BYTES) { reader.cancel(); break; }
+        text += decoder.decode(value, { stream: true });
+      }
+    }
     return { status: res.status, headers: Object.fromEntries(res.headers.entries()), body: text };
   } finally {
     clearTimeout(timeoutId);

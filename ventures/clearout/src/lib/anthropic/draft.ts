@@ -59,8 +59,8 @@ export async function generateDraft(context: DraftContext): Promise<{
     .join("\n\n---\n\n")
 
   const toneInstructions = buildToneInstructions(requested_tone, tone_profile, relationship_type)
-  const customInstructions = instruction ? `\n\nSpecial instruction: "${instruction}"` : ""
-  const voiceInstructions = voice_instruction ? `\n\nVoice instruction from user: "${voice_instruction}"` : ""
+  const customInstructions = instruction ? `\n\nSpecial instruction: "${instruction.slice(0, 500).replace(/"/g, "'")}"` : ""
+  const voiceInstructions = voice_instruction ? `\n\nVoice instruction from user: "${voice_instruction.slice(0, 500).replace(/"/g, "'")}"` : ""
 
   const systemPrompt = `You are ClearOut's drafting engine. Your job is to write reply drafts that sound exactly like the user - not like a generic AI assistant.
 
@@ -77,8 +77,8 @@ Key rules:
 
 Respond with JSON: { "draft": "...", "reasoning": "one sentence why this tone/approach" }`
 
-  const userPrompt = `Thread subject: ${subject ?? "(no subject)"}
-Recipient: ${recipient_name ?? "them"} (relationship: ${relationship_type})
+  const userPrompt = `Thread subject: ${(subject ?? "(no subject)").slice(0, 200)}
+Recipient: ${(recipient_name ?? "them").slice(0, 100)} (relationship: ${relationship_type.slice(0, 50)})
 Requested tone: ${requested_tone}${customInstructions}${voiceInstructions}
 
 Conversation history (most recent last):

@@ -13,7 +13,7 @@ const GenerateDraftSchema = z.object({
 const UpdateDraftSchema = z.object({
   draft_id: z.string().uuid(),
   status: z.enum(["approved", "edited", "discarded"]).optional(),
-  edited_content: z.string().optional(),
+  edited_content: z.string().max(50_000).optional(),
 })
 
 // POST /api/drafts - generate a new draft

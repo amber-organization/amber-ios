@@ -223,8 +223,8 @@ export async function processOnboardingMessage(
     return STEP_PROMPTS.complete;
   }
 
-  // Parse the user's response for the current step
-  const parsed = await parseWithClaude(currentStep, userText);
+  // Parse the user's response for the current step (truncate to prevent token bombing)
+  const parsed = await parseWithClaude(currentStep, userText.slice(0, 1000));
 
   if (!parsed) {
     // Couldn't parse — re-ask

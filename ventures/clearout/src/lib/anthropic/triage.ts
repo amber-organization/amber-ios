@@ -36,10 +36,10 @@ Always respond with valid JSON only.`
 
 export async function triageThread(input: TriageInput, threadId: string): Promise<TriageResponse> {
   const messageContext = `
-Subject: ${input.subject ?? "(no subject)"}
-From: ${input.from_name ?? ""} <${input.from_email ?? "unknown"}>
-Channel: ${input.channel_type ?? "email"}
-Relationship: ${input.relationship_type ?? "unknown"} (importance: ${input.importance_score ?? 50}/100)
+Subject: ${(input.subject ?? "(no subject)").slice(0, 200)}
+From: ${(input.from_name ?? "").slice(0, 100)} <${(input.from_email ?? "unknown").slice(0, 254)}>
+Channel: ${(input.channel_type ?? "email").slice(0, 50)}
+Relationship: ${(input.relationship_type ?? "unknown").slice(0, 50)} (importance: ${input.importance_score ?? 50}/100)
 Messages in thread: ${input.prior_messages_count ?? 1}
 Thread age: ${input.thread_age_hours ?? 0} hours
 
