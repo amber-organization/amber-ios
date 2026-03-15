@@ -1,0 +1,276 @@
+.page {
+  flex: 1;
+  padding: 32px 36px;
+  overflow-y: auto;
+  max-width: 900px;
+}
+
+.spinnerPage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Header ───────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 36px;
+}
+
+.greeting {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--amber-text);
+  margin-bottom: 4px;
+  letter-spacing: -0.4px;
+}
+
+.greetingSub {
+  font-size: 14px;
+  color: var(--amber-muted);
+}
+
+.overallBadge {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.overallNum {
+  position: absolute;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--amber-gold);
+}
+
+/* ── Sections ─────────────────────────────────── */
+.section {
+  margin-bottom: 32px;
+}
+
+.sectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--amber-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 14px;
+}
+
+.sectionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.sectionRow .sectionTitle {
+  margin-bottom: 0;
+}
+
+.seeAll {
+  font-size: 13px;
+  color: var(--amber-gold);
+  text-decoration: none;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+
+.seeAll:hover {
+  opacity: 1;
+}
+
+/* ── Health score grid ────────────────────────── */
+.scoresGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.scoreCard {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--amber-border);
+  border-radius: 16px;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.scoreCard:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.14);
+}
+
+.scoreGaugeWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scoreNum {
+  position: absolute;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.scoreLabel {
+  font-size: 12px;
+  color: var(--amber-muted);
+  font-weight: 500;
+}
+
+/* ── Summary card ─────────────────────────────── */
+.summaryCard {
+  background: rgba(245,166,35,0.06);
+  border: 1px solid rgba(245,166,35,0.2);
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.summaryIcon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.summaryText {
+  font-size: 14px;
+  color: var(--amber-text);
+  line-height: 1.65;
+}
+
+/* ── Quick actions ────────────────────────────── */
+.actionsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.actionBtn {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--amber-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--amber-text);
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.actionBtn:hover {
+  background: rgba(245,166,35,0.08);
+  border-color: rgba(245,166,35,0.25);
+  color: var(--amber-gold);
+}
+
+.actionBtn svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* ── Memories ─────────────────────────────────── */
+.memoriesList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.memoryItem {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--amber-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.memoryMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.memorySource {
+  font-size: 13px;
+}
+
+.memoryDate {
+  font-size: 12px;
+  color: var(--amber-muted);
+}
+
+.memoryPeople {
+  font-size: 12px;
+  color: var(--amber-gold);
+  background: rgba(245,166,35,0.1);
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.memoryContent {
+  font-size: 14px;
+  color: var(--amber-text);
+  line-height: 1.55;
+}
+
+.emptyMemories {
+  font-size: 14px;
+  color: var(--amber-muted);
+  padding: 20px 0;
+}
+
+.link {
+  color: var(--amber-gold);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.loadingRow {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+/* ── Spinners ─────────────────────────────────── */
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--amber-border);
+  border-top-color: var(--amber-gold);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.spinnerSmall {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--amber-border);
+  border-top-color: var(--amber-gold);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Responsive ───────────────────────────────── */
+@media (max-width: 800px) {
+  .page { padding: 20px 16px; }
+  .scoresGrid { grid-template-columns: repeat(3, 1fr); }
+  .actionsGrid { grid-template-columns: repeat(2, 1fr); }
+}

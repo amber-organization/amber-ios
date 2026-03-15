@@ -1,0 +1,244 @@
+.page {
+  flex: 1;
+  padding: 32px 36px;
+  overflow-y: auto;
+  max-width: 980px;
+}
+
+.spinnerPage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Header ───────────────────────────────────── */
+.header {
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--amber-text);
+  letter-spacing: -0.4px;
+  margin-bottom: 4px;
+}
+
+.sub {
+  font-size: 14px;
+  color: var(--amber-muted);
+}
+
+/* ── Summary bar ──────────────────────────────── */
+.summaryBar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+
+.dimSummary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--amber-border);
+  border-radius: 20px;
+  padding: 6px 12px;
+}
+
+.dimDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.dimSummaryLabel {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dimSummaryCount {
+  font-size: 12px;
+  color: var(--amber-muted);
+}
+
+/* ── Section title ────────────────────────────── */
+.sectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--amber-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 14px;
+  margin-top: 8px;
+}
+
+/* ── Grid ─────────────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+/* ── Card ─────────────────────────────────────── */
+.card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--amber-border);
+  border-radius: 18px;
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.card:hover {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.12);
+}
+
+.cardConnected {
+  border-color: rgba(39,174,96,0.25);
+  background: rgba(39,174,96,0.04);
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.cardIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.cardMeta {
+  flex: 1;
+}
+
+.cardName {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--amber-text);
+  margin-bottom: 4px;
+}
+
+.dimTag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.connectedDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #27ae60;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.cardDesc {
+  font-size: 13px;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.55;
+}
+
+.impact {
+  font-size: 12px;
+  color: var(--amber-gold);
+  background: rgba(245,166,35,0.08);
+  border: 1px solid rgba(245,166,35,0.15);
+  padding: 4px 10px;
+  border-radius: 20px;
+  align-self: flex-start;
+}
+
+/* ── Card bottom ──────────────────────────────── */
+.cardBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.lastSync {
+  font-size: 11px;
+  color: var(--amber-muted);
+}
+
+.toggleBtn {
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: opacity 0.15s, background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 90px;
+}
+
+.toggleBtn:disabled {
+  opacity: 0.6;
+}
+
+.connectBtn {
+  background: var(--amber-gold);
+  border: none;
+  color: #0a0a0f;
+}
+
+.connectBtn:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.disconnectBtn {
+  background: rgba(231,76,60,0.12);
+  border: 1px solid rgba(231,76,60,0.25);
+  color: #e74c3c;
+}
+
+.disconnectBtn:hover:not(:disabled) {
+  background: rgba(231,76,60,0.2);
+}
+
+/* ── Spinner ──────────────────────────────────── */
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--amber-border);
+  border-top-color: var(--amber-gold);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.spinnerInline {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(0,0,0,0.2);
+  border-top-color: #0a0a0f;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 700px) {
+  .page { padding: 20px 16px; }
+  .grid { grid-template-columns: 1fr; }
+}

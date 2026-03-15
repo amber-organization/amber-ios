@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { UserProvider } from '@auth0/nextjs-auth0/client';
+import Nav from '@/components/nav';
 import './globals.css';
+import './shell.css';
 
 export const metadata: Metadata = {
   title: 'Amber — Your Health Network',
@@ -16,7 +18,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <UserProvider>{children}</UserProvider>
+        <UserProvider>
+          <div className="appShell">
+            <Nav />
+            <div className="appContent">
+              {children}
+            </div>
+          </div>
+        </UserProvider>
       </body>
     </html>
   );

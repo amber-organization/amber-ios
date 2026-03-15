@@ -1,0 +1,335 @@
+.page {
+  flex: 1;
+  padding: 32px 36px;
+  overflow-y: auto;
+  max-width: 860px;
+}
+
+.spinnerPage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Header ───────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--amber-text);
+  letter-spacing: -0.4px;
+  margin-bottom: 4px;
+}
+
+.sub {
+  font-size: 14px;
+  color: var(--amber-muted);
+}
+
+.addBtn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--amber-gold);
+  color: #0a0a0f;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: opacity 0.15s;
+}
+
+.addBtn:hover { opacity: 0.88; }
+
+/* ── Filters ──────────────────────────────────── */
+.filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.searchWrap {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--amber-muted);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--amber-border);
+  border-radius: 10px;
+  padding: 10px 13px 10px 38px;
+  font-size: 14px;
+  color: var(--amber-text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.searchInput:focus { border-color: rgba(245,166,35,0.4); }
+.searchInput::placeholder { color: rgba(255,255,255,0.2); }
+
+.filterSelect {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--amber-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--amber-text);
+  outline: none;
+  transition: border-color 0.2s;
+  cursor: pointer;
+}
+
+.filterSelect:focus { border-color: rgba(245,166,35,0.4); }
+
+/* ── Memory list ──────────────────────────────── */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--amber-border);
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.srcIcon {
+  font-size: 14px;
+}
+
+.date {
+  font-size: 12px;
+  color: var(--amber-muted);
+}
+
+.tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.personTag {
+  font-size: 11px;
+  color: var(--amber-gold);
+  background: rgba(245,166,35,0.1);
+  border: 1px solid rgba(245,166,35,0.2);
+  padding: 2px 9px;
+  border-radius: 20px;
+}
+
+.summary {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--amber-text);
+  margin-bottom: 6px;
+  opacity: 0.85;
+}
+
+.content {
+  font-size: 14px;
+  color: rgba(255,255,255,0.65);
+  line-height: 1.6;
+}
+
+.empty {
+  font-size: 14px;
+  color: var(--amber-muted);
+  padding: 40px 0;
+  text-align: center;
+}
+
+.linkBtn {
+  background: none;
+  border: none;
+  color: var(--amber-gold);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* ── Modal ────────────────────────────────────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+
+.modal {
+  background: #1a1a22;
+  border: 1px solid var(--amber-border);
+  border-radius: 20px;
+  padding: 28px 28px 24px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.modalTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--amber-text);
+  margin-bottom: 20px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--amber-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.textarea {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--amber-border);
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 14px;
+  color: var(--amber-text);
+  outline: none;
+  resize: vertical;
+  line-height: 1.5;
+  transition: border-color 0.2s;
+}
+
+.textarea:focus { border-color: rgba(245,166,35,0.4); }
+.textarea::placeholder { color: rgba(255,255,255,0.2); }
+
+.input {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--amber-border);
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 14px;
+  color: var(--amber-text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input:focus { border-color: rgba(245,166,35,0.4); }
+.input::placeholder { color: rgba(255,255,255,0.2); }
+
+.select {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--amber-border);
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 14px;
+  color: var(--amber-text);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.select:focus { border-color: rgba(245,166,35,0.4); }
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.cancelBtn {
+  background: none;
+  border: 1px solid var(--amber-border);
+  border-radius: 9px;
+  padding: 9px 16px;
+  font-size: 13px;
+  color: var(--amber-muted);
+  transition: color 0.15s;
+}
+
+.cancelBtn:hover { color: var(--amber-text); }
+
+.saveBtn {
+  background: var(--amber-gold);
+  border: none;
+  border-radius: 9px;
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0a0a0f;
+  transition: opacity 0.15s;
+}
+
+.saveBtn:disabled { opacity: 0.5; }
+
+/* ── Misc ─────────────────────────────────────── */
+.loadingRow {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--amber-border);
+  border-top-color: var(--amber-gold);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.spinnerSmall {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--amber-border);
+  border-top-color: var(--amber-gold);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 700px) {
+  .page { padding: 20px 16px; }
+  .filters { flex-direction: column; }
+}
