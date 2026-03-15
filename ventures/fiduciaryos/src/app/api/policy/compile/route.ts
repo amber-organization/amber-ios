@@ -10,11 +10,15 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
     const res = await fetch(`${PYTHON_API}/policy/compile`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch {

@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
       results.push({ institution: item.institution, accounts: res.data.accounts.map((a) => ({ name: a.name, type: a.type, balance: a.balances.current })) });
     } catch (err) {
-      errors.push(`${item.institution}: ${err instanceof Error ? err.message : "unknown error"}`);
+      errors.push(`${item.institution}: failed to fetch balances`);
     }
   }
 

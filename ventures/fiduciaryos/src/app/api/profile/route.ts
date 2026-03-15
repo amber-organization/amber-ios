@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { DEFAULT_PROFILE } from "@/lib/types";
+import { requireAuth } from "@/lib/auth";
 
 const PROFILE_ID = "fiduciaryos";
 
@@ -12,7 +13,10 @@ function getSupabase() {
   return createClient(url, key);
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if (!auth.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const supabase = getSupabase();
   if (!supabase) {
     return NextResponse.json({ profile: null, configured: false });
@@ -32,6 +36,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if (!auth.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   let profile: unknown;
   try {
     profile = await req.json();
@@ -50,7 +57,7 @@ export async function POST(req: NextRequest) {
     .upsert({ id: PROFILE_ID, profile, updated_at: new Date().toISOString() });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Failed to save profile" }, { status: 500 });
   }
 
   return NextResponse.json({ success: true, configured: true });

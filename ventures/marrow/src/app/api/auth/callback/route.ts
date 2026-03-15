@@ -40,14 +40,15 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     console.error('[auth/callback] exchange error:', error.message)
-    return NextResponse.redirect(
-      `${origin}/login?error=${encodeURIComponent(error.message)}`
-    )
+    return NextResponse.redirect(`${origin}/login?error=auth_failed`)
   }
 
   // Process pending org invite if this user was invited via inviteUserByEmail
   const pendingOrgId = sessionData?.user?.user_metadata?.pending_org_id as string | undefined
-  const pendingOrgRole = sessionData?.user?.user_metadata?.pending_org_role as string | undefined
+  const pendingOrgRoleRaw = sessionData?.user?.user_metadata?.pending_org_role as string | undefined
+  const VALID_ORG_ROLES = ['admin', 'reviewer'] as const
+  type OrgRole = typeof VALID_ORG_ROLES[number]
+  const pendingOrgRole = VALID_ORG_ROLES.includes(pendingOrgRoleRaw as OrgRole) ? (pendingOrgRoleRaw as OrgRole) : undefined
 
   if (pendingOrgId && pendingOrgRole && sessionData?.user?.id) {
     try {
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
         await svcSb.from('org_members').insert({
           org_id: pendingOrgId,
           user_id: sessionData.user.id,
-          role: pendingOrgRole as 'admin' | 'reviewer',
+          role: pendingOrgRole,
           invited_by: null,
         })
       }

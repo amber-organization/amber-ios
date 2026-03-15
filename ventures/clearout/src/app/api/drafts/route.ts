@@ -117,7 +117,7 @@ export async function POST(request: Request) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ error: "Failed to save draft" }, { status: 500 })
 
   // Log draft generation
   await (supabase as any).from("action_log").insert({
@@ -171,7 +171,7 @@ export async function PATCH(request: Request) {
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) return NextResponse.json({ error: "Failed to update draft" }, { status: 500 })
 
   // Increment memory stats
   if (status === "approved" || status === "discarded") {

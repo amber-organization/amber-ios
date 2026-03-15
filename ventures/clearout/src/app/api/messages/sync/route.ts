@@ -88,6 +88,7 @@ export async function POST(request: Request) {
       errors: result.errors,
     })
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 })
+    console.error("[messages/sync] unexpected error:", err)
+    return NextResponse.json({ error: "Sync failed" }, { status: 500 })
   }
 }

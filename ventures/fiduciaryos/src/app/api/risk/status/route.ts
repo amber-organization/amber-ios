@@ -8,7 +8,10 @@ export async function GET(req: NextRequest) {
   if (!auth.ok) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const res = await fetch(`${PYTHON_API}/risk/status`);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    const res = await fetch(`${PYTHON_API}/risk/status`, { signal: controller.signal });
+    clearTimeout(timeout);
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch {

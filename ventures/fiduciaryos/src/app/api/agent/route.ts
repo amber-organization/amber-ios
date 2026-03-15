@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
   const { question, profile, riskLevel, riskAlerts, harvestCandidates, portfolioTotalUsd } =
     await req.json() as AgentRequest;
   if (!question || !profile) return NextResponse.json({ error: "question and profile required" }, { status: 400 });
+  if (typeof question !== "string" || question.length > 1000) return NextResponse.json({ error: "question must be a string under 1000 characters" }, { status: 400 });
 
   const a = calcMonthlyAllocation(profile);
 
