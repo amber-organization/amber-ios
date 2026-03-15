@@ -138,20 +138,19 @@ See **SETUP.md** for env vars and full configuration.
 
 ## Sub-Ventures
 
-Amber is a platform. These products are built on top of the Amber relationship and health graph:
+Amber is a platform. These 7 products are built on top of the Amber relationship and health graph:
 
 | Venture | What it is | Status |
 |---------|-----------|--------|
 | **Story** | Verified-real social network — no bots, no resharing, only things you actually lived | Live |
 | **D-NOB** | Private community for children fighting serious illness | Live |
 | **Marrow** | Club and organization recruiting OS — replaces Google Forms and spreadsheets | Live |
-| **FiduciaryOS** | AI financial advisor trained on fiduciary law with a cryptographic audit trail | Live |
+| **FiduciaryOS** | AI financial + life advisor — fiduciary financial guidance and career planning, combined | Live |
 | **ClearOut** | AI inbox that writes replies in your voice and learns who matters to you | Live |
-| **Stillness** | Mental health platform — tracks your psychological state, powered by Amber's graph | Building |
-| **Remember** | Early detection for cognitive decline — watches the signals that precede Alzheimer's | Building |
-| **WEB** | Relationship CRM for real people — reminds you to reach out before too long passes | Building |
-| **Life Plan Assistant** | Maps your personality and values into a career path, roadmap, and daily habits | Building |
+| **Stillness** | Brain health platform — mental health tracking + cognitive decline detection, built on Amber's graph | Building |
 | **Healthy Tech Index** | Every app and device rated by what it actually does to the people who use it | Building |
+
+**WEB** (relationship CRM) is Amber's core feature, not a separate product. It lives in the contacts + memories layer of the platform.
 
 The moat: each sub-venture deepens Amber's compounding personal dataset. The relationship graph, health metrics, behavioral data, and social patterns cannot be rebuilt from scratch by any competitor starting today.
 
