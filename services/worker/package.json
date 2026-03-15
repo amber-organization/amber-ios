@@ -1,0 +1,25 @@
+{
+  "name": "@amber/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx --env-file=.env src/index.ts",
+    "build": "tsup src/index.ts --format esm --out-dir dist",
+    "typecheck": "tsc -p tsconfig.json",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@amber/memory-engine": "workspace:*",
+    "@amber/prompts": "workspace:*",
+    "@amber/storage": "workspace:*",
+    "postgres": "^3.4.3",
+    "drizzle-orm": "^0.44.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "tsup": "^8.2.4",
+    "tsx": "^4.16.0",
+    "typescript": "^5.6.2"
+  }
+}

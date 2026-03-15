@@ -24,6 +24,12 @@ export const config = {
     appSecret: requireEnv('PRIVY_APP_SECRET'),
   },
 
+  // Auth0
+  auth0: {
+    domain: optionalEnv('AUTH0_DOMAIN', 'dev-4prs757badfajpi5.us.auth0.com')!,
+    clientId: optionalEnv('AUTH0_CLIENT_ID', 'ytP3na2gIO9Wpsc4cEt1klmSbPF4ZAIe')!,
+  },
+
   // Database
   database: {
     url: optionalEnv('DATABASE_URL'),
@@ -58,6 +64,28 @@ export const config = {
   server: {
     port: Number(optionalEnv('PORT', '8080')),
     host: optionalEnv('HOST', '0.0.0.0'),
+  },
+
+  // Stripe (billing)
+  stripe: {
+    secretKey: optionalEnv('STRIPE_SECRET_KEY'),
+    webhookSecret: optionalEnv('STRIPE_WEBHOOK_SECRET'),
+    prices: {
+      proMonthly: optionalEnv('STRIPE_PRICE_PRO_MONTHLY'),
+      proAnnual: optionalEnv('STRIPE_PRICE_PRO_ANNUAL'),
+      teamMonthly: optionalEnv('STRIPE_PRICE_TEAM_MONTHLY'),
+    },
+  },
+
+  // AI
+  anthropic: {
+    apiKey: optionalEnv('ANTHROPIC_API_KEY'),
+  },
+
+  // Loop Message (iMessage delivery)
+  loopMessage: {
+    apiKey: optionalEnv('LOOP_API_KEY'),
+    webhookSecret: optionalEnv('LOOP_WEBHOOK_SECRET'),
   },
 
   // Environment

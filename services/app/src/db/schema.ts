@@ -1,14 +1,4 @@
-import {
-  pgTable,
-  serial,
-  text,
-  timestamp,
-  jsonb,
-  varchar,
-  integer,
-  boolean,
-  pgEnum,
-} from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, timestamp, jsonb, varchar, integer, pgEnum, boolean } from 'drizzle-orm/pg-core';
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
@@ -49,6 +39,7 @@ export const signalStatusEnum = pgEnum('signal_status', [
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
   privyUserId: varchar('privy_user_id', { length: 255 }).notNull().unique(),
+  auth0UserId: varchar('auth0_user_id', { length: 255 }).unique(),
   didPrimary: varchar('did_primary', { length: 255 }),
   privacyTier: privacyTierEnum('privacy_tier').default('local_only').notNull(),
   apnsDeviceToken: varchar('apns_device_token', { length: 512 }),
@@ -231,4 +222,154 @@ export const anchors = pgTable('anchors', {
   chainTx: varchar('chain_tx', { length: 255 }),
   uri: varchar('uri', { length: 512 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Additional enums for GCP/Onboarding features
+export const notificationStatusEnum = pgEnum('notification_status', ['queued', 'sent', 'delivered', 'opened', 'failed']);
+export const circleTypeEnum = pgEnum('circle_type', ['auto', 'manual']);
+export const personalityTypeEnum = pgEnum('personality_type', ['horoscope', 'myers_briggs', 'enneagram', 'big_five']);
+export const devicePlatformEnum = pgEnum('device_platform', ['ios', 'android']);
+export const onboardingStepEnum = pgEnum('onboarding_step', ['welcome', 'basics', 'birthday', 'location', 'education', 'permissions', 'privacy_tier', 'complete']);
+
+// Onboarding progress (tracks wizard state)
+export const onboardingProgress = pgTable('onboarding_progress', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).unique(),
+  currentStep: onboardingStepEnum('current_step').default('welcome'),
+  stepsCompleted: jsonb('steps_completed').default({}),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Personality profiles (derived personality data)
+export const personalityProfiles = pgTable('personality_profiles', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  profileType: personalityTypeEnum('profile_type').notNull(),
+  result: jsonb('result').notNull(),
+  derivedFrom: varchar('derived_from', { length: 50 }),
+  confidence: integer('confidence'),
+  contentHash: varchar('content_hash', { length: 66 }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Notifications (push notification log)
+export const notifications = pgTable('notifications', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  signalId: integer('signal_id').references(() => signals.id),
+  title: varchar('title', { length: 255 }).notNull(),
+  body: text('body').notNull(),
+  deepLink: varchar('deep_link', { length: 500 }),
+  status: notificationStatusEnum('status').default('queued'),
+  sentAt: timestamp('sent_at', { withTimezone: true }),
+  openedAt: timestamp('opened_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Device tokens (for push notifications)
+export const deviceTokens = pgTable('device_tokens', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  token: varchar('token', { length: 500 }).notNull(),
+  platform: devicePlatformEnum('platform').notNull(),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ─── Memory Engine Tables ─────────────────────────────────────────────────────
+
+export const memorySourceEnum = pgEnum('memory_source', [
+  'manual_note', 'imessage', 'email', 'call', 'meeting',
+  'photo', 'health_signal', 'location_signal', 'social_media', 'fireflies', 'loom',
+]);
+
+export const actionItemStatusEnum = pgEnum('action_item_status', [
+  'open', 'pending', 'completed', 'cancelled',
+]);
+
+export const approvalStatusEnum = pgEnum('approval_status', [
+  'pending', 'approved', 'rejected', 'edited',
+]);
+
+export const actionItemPriorityEnum = pgEnum('action_item_priority', [
+  'urgent', 'high', 'normal', 'low',
+]);
+
+// Memories — relationship intelligence captured from any source
+export const memories = pgTable('memories', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  personIds: jsonb('person_ids').$type<number[]>().default([]),
+  source: memorySourceEnum('source').notNull(),
+  rawContent: text('raw_content').notNull(),
+  summary: text('summary'),
+  traits: jsonb('traits').$type<string[]>().default([]),
+  emotionalLabel: varchar('emotional_label', { length: 100 }),
+  trustSignals: jsonb('trust_signals').$type<string[]>().default([]),
+  lifeEvents: jsonb('life_events').$type<string[]>().default([]),
+  isActionable: boolean('is_actionable').default(false),
+  confidence: integer('confidence').default(80),
+  privacyTier: privacyTierEnum('privacy_tier').default('selective'),
+  tags: jsonb('tags').$type<string[]>().default([]),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Action items — follow-ups extracted from memories
+export const actionItems = pgTable('action_items', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  personIds: jsonb('person_ids').$type<number[]>().default([]),
+  memoryId: integer('memory_id').references(() => memories.id),
+  description: text('description').notNull(),
+  priority: actionItemPriorityEnum('priority').default('normal'),
+  status: actionItemStatusEnum('status').default('open'),
+  dueAt: timestamp('due_at', { withTimezone: true }),
+  requiresApproval: boolean('requires_approval').default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Approval tasks — actions that need explicit user sign-off before executing
+export const approvalTasks = pgTable('approval_tasks', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  actionItemId: integer('action_item_id').references(() => actionItems.id),
+  type: varchar('type', { length: 100 }).notNull(), // e.g. 'send_message', 'calendar_invite'
+  proposedContent: text('proposed_content').notNull(),
+  editedContent: text('edited_content'),
+  status: approvalStatusEnum('status').default('pending'),
+  resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ─── Billing (Stripe) ─────────────────────────────────────────────────────────
+
+export const subscriptionStatusEnum = pgEnum('subscription_status', [
+  'trialing', 'active', 'past_due', 'canceled', 'incomplete',
+]);
+
+export const subscriptionPlanEnum = pgEnum('subscription_plan', [
+  'free', 'pro', 'team',
+]);
+
+export const subscriptions = pgTable('subscriptions', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull().unique(),
+  stripeCustomerId: varchar('stripe_customer_id', { length: 255 }).unique(),
+  stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }).unique(),
+  stripePriceId: varchar('stripe_price_id', { length: 255 }),
+  plan: subscriptionPlanEnum('plan').default('free'),
+  status: subscriptionStatusEnum('status').default('trialing'),
+  trialEndsAt: timestamp('trial_ends_at', { withTimezone: true }),
+  currentPeriodStart: timestamp('current_period_start', { withTimezone: true }),
+  currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
+  cancelAtPeriodEnd: boolean('cancel_at_period_end').default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
