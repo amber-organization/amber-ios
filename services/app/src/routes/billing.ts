@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import { authenticate, AuthenticatedRequest } from '../auth/middleware.js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-02-24.acacia',
+  apiVersion: '2025-02-24.acacia' as any,
 });
 
 // Price IDs from Stripe dashboard — set these in env
@@ -124,7 +124,7 @@ export async function registerBillingRoutes(app: FastifyInstance) {
     let event: Stripe.Event;
     try {
       event = secret
-        ? stripe.webhooks.constructEvent(req.rawBody as Buffer, sig, secret)
+        ? stripe.webhooks.constructEvent((req as any).rawBody as Buffer, sig, secret)
         : (req.body as Stripe.Event);
     } catch (err: any) {
       app.log.error({ err }, 'Stripe webhook signature verification failed');

@@ -327,7 +327,7 @@ export async function registerSignalRoutes(app: FastifyInstance) {
 
       let matched = 0;
       const matchTypes = [
-        { field: 'almaFkMater', label: 'alma mater' },
+        { field: 'almaMater', label: 'alma mater' },
         { field: 'hometown', label: 'hometown' },
         { field: 'currentCity', label: 'current city' },
       ] as const;

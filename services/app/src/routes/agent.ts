@@ -91,18 +91,67 @@ export async function registerAgentRoutes(app: FastifyInstance) {
 
   /**
    * GET /agent/tasks
-   * List recent tasks for the authenticated user.
+   * List recent tasks.
+   * - Authenticated users: returns their own tasks (Privy JWT)
+   * - Agent daemon: pass X-Agent-Secret + ?userId=N to get queued tasks for processing
    */
-  app.get('/agent/tasks', { preHandler: authenticate }, async (req: AuthenticatedRequest) => {
+  app.get('/agent/tasks', async (req: FastifyRequest, reply: FastifyReply) => {
+    const agentSecret = req.headers['x-agent-secret'];
+    const query = req.query as { userId?: string; status?: string };
+
+    let userId: number;
+
+    if (AGENT_SECRET && agentSecret === AGENT_SECRET) {
+      // Daemon call — must supply userId
+      if (!query.userId) return reply.code(400).send({ error: 'userId required for agent calls' });
+      userId = parseInt(query.userId, 10);
+      if (isNaN(userId)) return reply.code(400).send({ error: 'invalid userId' });
+    } else {
+      // User call — verify via Privy (standard authenticate middleware)
+      // We run it manually since this route has dual auth
+      const authReq = req as AuthenticatedRequest;
+      await authenticate(authReq, reply);
+      // If authenticate rejected the request, reply is already sent
+      if (reply.sent) return;
+      userId = authReq.userId!;
+    }
+
     const tasks = await db
       .select()
       .from(schema.agentTasks)
-      .where(eq(schema.agentTasks.userId, req.userId!))
+      .where(eq(schema.agentTasks.userId, userId))
       .orderBy(desc(schema.agentTasks.createdAt))
       .limit(50);
 
-    return { tasks };
+    // Optionally filter by status (for daemon polling: ?status=queued)
+    const filtered = query.status
+      ? tasks.filter((t) => t.status === query.status)
+      : tasks;
+
+    return { tasks: filtered };
   });
+
+  /**
+   * GET /agent/tasks/:id
+   * Get a single task — used by the Python agent to poll for approval status.
+   */
+  app.get<{ Params: { id: string } }>(
+    '/agent/tasks/:id',
+    { preHandler: authenticateAgent },
+    async (req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const taskId = parseInt(req.params.id, 10);
+      if (isNaN(taskId)) return reply.code(400).send({ error: 'invalid task id' });
+
+      const [task] = await db
+        .select()
+        .from(schema.agentTasks)
+        .where(eq(schema.agentTasks.id, taskId))
+        .limit(1);
+
+      if (!task) return reply.code(404).send({ error: 'task not found' });
+      return { task };
+    }
+  );
 
   /**
    * PATCH /agent/tasks/:id
@@ -184,7 +233,7 @@ export async function registerAgentRoutes(app: FastifyInstance) {
       summary: text,
       isActionable: false,
       confidence: 100,
-      privacyTier: 'private',
+      privacyTier: 'local_only',
     });
 
     return { ok: true };

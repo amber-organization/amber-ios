@@ -35,11 +35,11 @@ export const STEP_PROMPTS: Record<OnboardingStep, string> = {
   education:
     "Where did/do you go to school? (University, college, or skip this one)",
   permissions:
-    "Amber works best with access to your calendar and contacts — you can grant those in the app later. For now, just reply "got it" and we'll keep going.",
+    "Amber works best with access to your calendar and contacts — you can grant those in the app later. For now, just reply 'got it' and we'll keep going.",
   privacy_tier:
     "Last one — how private do you want your health data?\n\n1. Private only (just you)\n2. Close friends can see your highlights\n3. Full social (share across your Amber network)\n\nReply 1, 2, or 3",
   complete:
-    "You're all set! I'm Amber, and I've got you. 🌿\n\nTell me anything — what's on your mind today?",
+    "You're all set! I'm Amber, and I've got you.\n\nTell me anything — what's on your mind today?",
 };
 
 export function getNextStep(current: OnboardingStep): OnboardingStep {
@@ -110,15 +110,25 @@ Message: "${userText}"`,
   }
 }
 
-// ── Apply parsed data to the user profile ────────────────────────────────────
+// ── Apply parsed data to the correct tables ──────────────────────────────────
 
 async function applyStepData(userId: number, step: string, data: Record<string, any>): Promise<void> {
+  // privacy_tier lives on the users table, not userProfiles
+  if (step === 'privacy_tier' && data.tier) {
+    await db
+      .update(schema.users)
+      .set({ privacyTier: data.tier as any })
+      .where(eq(schema.users.id, userId));
+    return;
+  }
+
+  // All other steps map to userProfiles columns
   let profileUpdate: Record<string, any> = {};
 
   switch (step) {
     case 'basics':
+      // userProfiles has displayName; username is not a column here (web handles it separately)
       if (data.displayName) profileUpdate.displayName = data.displayName;
-      if (data.username) profileUpdate.username = data.username;
       break;
     case 'birthday':
       if (data.birthday) profileUpdate.birthday = new Date(data.birthday);
@@ -129,9 +139,6 @@ async function applyStepData(userId: number, step: string, data: Record<string, 
       break;
     case 'education':
       if (data.almaMater) profileUpdate.almaMater = data.almaMater;
-      break;
-    case 'privacy_tier':
-      if (data.tier) profileUpdate.privacyTier = data.tier;
       break;
   }
 

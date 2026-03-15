@@ -8,7 +8,7 @@ import { deriveHoroscope } from '../util/horoscope.js';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-02-24.acacia',
+  apiVersion: '2025-02-24.acacia' as any,
 });
 
 const WEB_PRICES: Record<string, string> = {
@@ -103,7 +103,7 @@ export async function registerOnboardingRoutes(app: FastifyInstance) {
     '/onboarding/step/:stepName',
     { preHandler: authenticateAuth0 },
     async (req: AuthenticatedRequest, reply) => {
-      const { stepName } = req.params;
+      const { stepName } = req.params as { stepName: string };
 
       if (!VALID_STEPS.includes(stepName as any)) {
         return reply.code(400).send({ error: 'invalid_step', message: `Invalid step: ${stepName}` });
@@ -161,9 +161,12 @@ export async function registerOnboardingRoutes(app: FastifyInstance) {
           // Permissions are stored as metadata but don't map to profile columns directly
           // Store as-is for the app layer to consume
           break;
-        case 'privacy_tier':
-          profileUpdate = { privacyTier: (body as z.infer<typeof stepSchemas.privacy_tier>).tier };
+        case 'privacy_tier': {
+          // privacyTier lives on the users table, not userProfiles
+          const tier = (body as z.infer<typeof stepSchemas.privacy_tier>).tier;
+          await db.update(schema.users).set({ privacyTier: tier }).where(eq(schema.users.id, req.userId!));
           break;
+        }
       }
 
       // Upsert user profile
@@ -271,7 +274,7 @@ export async function registerOnboardingRoutes(app: FastifyInstance) {
 
     const [updatedProfile] = await db
       .update(schema.userProfiles)
-      .set({ onboardingCompletedAt: new Date(), contentHash, updatedAt: new Date() })
+      .set({ onboardingComplete: true, contentHash, updatedAt: new Date() })
       .where(eq(schema.userProfiles.userId, req.userId!))
       .returning();
 
@@ -336,7 +339,7 @@ export async function registerOnboardingRoutes(app: FastifyInstance) {
     let event: Stripe.Event;
     try {
       event = secret
-        ? stripe.webhooks.constructEvent(req.rawBody as Buffer, sig, secret)
+        ? stripe.webhooks.constructEvent((req as any).rawBody as Buffer, sig, secret)
         : (req.body as Stripe.Event);
     } catch (err: any) {
       return reply.code(400).send({ error: err.message });

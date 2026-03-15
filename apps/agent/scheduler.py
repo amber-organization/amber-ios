@@ -34,7 +34,10 @@ def run_async(coro):
 def schedule_jobs():
     """Register all scheduled jobs."""
     log.info(f"Scheduling morning brief at {BRIEF_TIME} daily")
-    schedule.every().day.at(BRIEF_TIME).do(run_async, deliver_morning_brief())
+    # Use a lambda so a fresh coroutine is created on each invocation.
+    # Passing deliver_morning_brief() directly would create a one-shot coroutine
+    # that gets exhausted after the first run.
+    schedule.every().day.at(BRIEF_TIME).do(lambda: run_async(deliver_morning_brief()))
 
 
 def run_scheduler():

@@ -109,7 +109,7 @@ export async function registerProfileRoutes(app: FastifyInstance) {
     '/profile/:userId',
     { preHandler: authenticateAuth0 },
     async (req: AuthenticatedRequest, reply) => {
-      const targetUserId = Number(req.params.userId);
+      const targetUserId = Number((req.params as { userId: string }).userId);
 
       const [profile] = await db
         .select()
@@ -133,7 +133,8 @@ export async function registerProfileRoutes(app: FastifyInstance) {
           };
 
         case 'full_social': {
-          const { birthdayTime, birthLocation, contentHash, ...publicProfile } = profile;
+          // Strip sensitive fields from public view
+          const { birthdayTime, birthdayLocation, contentHash, phone, ...publicProfile } = profile;
           return publicProfile;
         }
 

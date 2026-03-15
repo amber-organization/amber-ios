@@ -175,7 +175,7 @@ async function processMessage(
     summary: amberReply,
     isActionable: /remind|follow.?up|action|todo/i.test(userText),
     confidence: 90,
-    privacyTier: 'selective',
+    privacyTier: 'selective_cloud',
   });
 
   return amberReply;
@@ -186,10 +186,15 @@ async function processMessage(
 // When they later sign up via web/iOS, the phone field links the accounts.
 
 async function createProvisionalUser(phone: string): Promise<number> {
-  // auth0Id is 'imessage:<phone>' for provisional accounts
+  // privyUserId is required (notNull) — use a provisional placeholder.
+  // auth0UserId marks it as an iMessage-originated account.
+  // When they later sign up via web/iOS, the phone field on userProfiles links accounts.
   const [user] = await db
     .insert(schema.users)
-    .values({ auth0Id: `imessage:${phone}` })
+    .values({
+      privyUserId: `provisional:imessage:${phone}`,
+      auth0UserId: `imessage:${phone}`,
+    })
     .returning();
 
   await db.insert(schema.userProfiles).values({ userId: user.id, phone });

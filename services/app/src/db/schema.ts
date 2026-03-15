@@ -11,9 +11,9 @@ export const runStatusEnum = pgEnum('run_status', ['queued', 'running', 'succeed
 
 // PRIVACY-01
 export const privacyTierEnum = pgEnum('privacy_tier', [
-  'local_only',    // All data stays on device. Zero cloud sync.
-  'selective',     // User chooses which fields sync.
-  'full_social',   // All permitted data syncs. Full signal matching.
+  'local_only',      // All data stays on device. Zero cloud sync.
+  'selective_cloud', // User chooses which fields sync to cloud.
+  'full_social',     // All permitted data syncs. Full signal matching.
 ]);
 
 // SIGNAL-01/02/03/04/05
@@ -50,14 +50,20 @@ export const users = pgTable('users', {
 export const userProfiles = pgTable('user_profiles', {
   id: serial('id').primaryKey(),
   userId: integer('user_id').references(() => users.id).notNull().unique(),
+  username: varchar('username', { length: 50 }).unique(),
   displayName: varchar('display_name', { length: 255 }),
-  birthday: timestamp('birthday', { withTimezone: true }),       // date + time for horoscope
+  bio: text('bio'),
+  avatarUrl: varchar('avatar_url', { length: 500 }),
+  birthday: timestamp('birthday', { withTimezone: true }),         // date + time for horoscope
+  birthdayTime: varchar('birthday_time', { length: 10 }),          // HH:MM — exact birth time for rising sign
   birthdayLocation: varchar('birthday_location', { length: 255 }), // city of birth for rising sign
-  horoscopeSign: varchar('horoscope_sign', { length: 50 }),     // auto-derived
+  horoscopeSign: varchar('horoscope_sign', { length: 50 }),        // auto-derived
   almaMater: varchar('alma_mater', { length: 255 }),
   hometown: varchar('hometown', { length: 255 }),
   currentCity: varchar('current_city', { length: 255 }),
   phone: varchar('phone', { length: 30 }).unique(),   // E.164 e.g. +14155551234 — used for iMessage lookup
+  privacyTier: privacyTierEnum('privacy_tier').default('local_only').notNull(),
+  contentHash: varchar('content_hash', { length: 64 }),  // SHA-256 of profile for blockchain anchoring
   onboardingComplete: boolean('onboarding_complete').default(false).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
@@ -284,7 +290,8 @@ export const deviceTokens = pgTable('device_tokens', {
 // ─── Memory Engine Tables ─────────────────────────────────────────────────────
 
 export const memorySourceEnum = pgEnum('memory_source', [
-  'manual_note', 'imessage', 'email', 'call', 'meeting',
+  'manual_note', 'imessage', 'web', 'ios',
+  'email', 'call', 'meeting',
   'photo', 'health_signal', 'location_signal', 'social_media', 'fireflies', 'loom',
 ]);
 
@@ -314,7 +321,7 @@ export const memories = pgTable('memories', {
   lifeEvents: jsonb('life_events').$type<string[]>().default([]),
   isActionable: boolean('is_actionable').default(false),
   confidence: integer('confidence').default(80),
-  privacyTier: privacyTierEnum('privacy_tier').default('selective'),
+  privacyTier: privacyTierEnum('privacy_tier').default('selective_cloud'),
   tags: jsonb('tags').$type<string[]>().default([]),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),

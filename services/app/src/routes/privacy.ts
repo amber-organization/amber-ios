@@ -21,7 +21,7 @@ const VALID_FIELDS = [
 type FieldType = (typeof VALID_FIELDS)[number];
 
 const PrivacyTierSchema = z.object({
-  tier: z.enum(['local_only', 'selective', 'full_social']),
+  tier: z.enum(['local_only', 'selective_cloud', 'full_social']),
 });
 
 const FieldPermissionSchema = z.object({
@@ -76,7 +76,7 @@ export async function registerPrivacyRoutes(app: FastifyInstance) {
 
     const isDowngrade =
       (current?.privacyTier === 'full_social' && tier !== 'full_social') ||
-      (current?.privacyTier === 'selective' && tier === 'local_only');
+      (current?.privacyTier === 'selective_cloud' && tier === 'local_only');
 
     await db
       .update(schema.users)
@@ -189,7 +189,7 @@ export async function requireFieldPermission(userId: number, fieldType: FieldTyp
     throw Object.assign(new Error('Field sync blocked: user is in local_only tier'), { statusCode: 403 });
   }
 
-  if (user?.privacyTier === 'selective') {
+  if (user?.privacyTier === 'selective_cloud') {
     const [perm] = await db
       .select()
       .from(schema.userPermissions)

@@ -125,7 +125,7 @@ export async function registerIntegrationRoutes(app: FastifyInstance) {
     '/integrations/:source/connect',
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply: FastifyReply) => {
-      const { source } = req.params;
+      const { source } = req.params as { source: string };
       if (!INTEGRATION_DIMENSIONS[source]) {
         return reply.code(400).send({ error: `Unknown integration: ${source}` });
       }
@@ -175,7 +175,7 @@ export async function registerIntegrationRoutes(app: FastifyInstance) {
     '/integrations/:source',
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply: FastifyReply) => {
-      const { source } = req.params;
+      const { source } = req.params as { source: string };
 
       await db
         .update(schema.integrations)
@@ -198,7 +198,7 @@ export async function registerIntegrationRoutes(app: FastifyInstance) {
   app.post<{ Params: { source: string } }>(
     '/integrations/:source/signal',
     async (req: FastifyRequest<{ Params: { source: string } }>, reply: FastifyReply) => {
-      const { source } = req.params;
+      const { source } = req.params as { source: string };
 
       if (!INTEGRATION_DIMENSIONS[source]) {
         return reply.code(400).send({ error: `Unknown integration: ${source}` });
