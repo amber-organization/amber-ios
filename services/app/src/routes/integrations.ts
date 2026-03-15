@@ -1,11 +1,12 @@
 /**
  * Amber Integrations API
  *
- * Four apps feed into Amber's six health dimensions:
+ * Five apps feed into Amber's six health dimensions:
  *   FiduciaryOS  → Financial health (portfolio, tax, wealth)
  *   ClearOut     → Social + Emotional (communication load, relationship patterns)
  *   Marrow       → Social + Professional (org network, recruiting)
  *   Story        → Social + Emotional (circles, prompts, human connection)
+ *   MedBridge    → Physical health (unified medical records, FHIR import)
  *
  * Each integration can:
  *   1. Connect (OAuth or API key)
@@ -28,6 +29,7 @@ const INTEGRATION_SECRETS: Record<string, string | undefined> = {
   marrow: process.env.MARROW_WEBHOOK_SECRET,
   story: process.env.STORY_WEBHOOK_SECRET,
   dnob: process.env.DNOB_WEBHOOK_SECRET,
+  medbridge: process.env.MEDBRIDGE_WEBHOOK_SECRET,
 };
 
 // Which health dimensions each integration drives
@@ -37,6 +39,7 @@ const INTEGRATION_DIMENSIONS: Record<string, string[]> = {
   marrow:      ['social', 'financial'],
   story:       ['social', 'emotional'],
   dnob:        ['emotional', 'social'],   // peer support → emotional + social belonging
+  medbridge:   ['physical'],             // unified medical records → physical health
 };
 
 // ── Score computation ────────────────────────────────────────────────────────

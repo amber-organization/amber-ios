@@ -367,6 +367,7 @@ export const integrationSourceEnum = pgEnum('integration_source', [
   'marrow',      // Social + Professional — org network, recruiting involvement
   'story',       // Social + Emotional — circles, daily prompts, human connection
   'dnob',        // Emotional + Social — peer support, community belonging
+  'medbridge',   // Physical health — unified medical records, FHIR import, health timeline
   'apple_health',
   'google_calendar',
   'instagram',
