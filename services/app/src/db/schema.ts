@@ -348,6 +348,51 @@ export const approvalTasks = pgTable('approval_tasks', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+// ─── Integrations ─────────────────────────────────────────────────────────────
+// Connected apps from Amber's ecosystem. Each sends health dimension signals.
+
+export const integrationSourceEnum = pgEnum('integration_source', [
+  'fiduciaryos', // Financial health — portfolio, tax, wealth
+  'clearout',    // Social + Emotional — communication patterns, inbox load
+  'marrow',      // Social + Professional — org network, recruiting involvement
+  'story',       // Social + Emotional — circles, daily prompts, human connection
+  'apple_health',
+  'google_calendar',
+  'instagram',
+  'linkedin',
+]);
+
+export const healthDimensionEnum = pgEnum('health_dimension', [
+  'spiritual', 'emotional', 'physical', 'intellectual', 'social', 'financial',
+]);
+
+// One row per connected integration per user
+export const integrations = pgTable('integrations', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  source: integrationSourceEnum('source').notNull(),
+  accessToken: text('access_token'),          // encrypted OAuth token
+  refreshToken: text('refresh_token'),
+  externalUserId: varchar('external_user_id', { length: 255 }),
+  metadata: jsonb('metadata'),                // source-specific config
+  lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }),
+  connectedAt: timestamp('connected_at', { withTimezone: true }).defaultNow().notNull(),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+});
+
+// Health dimension scores — updated by integrations + manual input
+export const healthScores = pgTable('health_scores', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  dimension: healthDimensionEnum('dimension').notNull(),
+  score: integer('score').notNull(),          // 0–100
+  source: integrationSourceEnum('source'),    // which integration drove this update
+  delta: integer('delta'),                    // change from last score
+  reasoning: text('reasoning'),              // Claude-generated explanation
+  rawData: jsonb('raw_data'),               // source payload that drove the score
+  computedAt: timestamp('computed_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 // ─── Billing (Stripe) ─────────────────────────────────────────────────────────
 
 export const subscriptionStatusEnum = pgEnum('subscription_status', [

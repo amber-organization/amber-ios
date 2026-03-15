@@ -21,6 +21,7 @@ import { registerActionItemRoutes } from './routes/action-items.js';
 import { registerApprovalRoutes } from './routes/approvals.js';
 import { registerBillingRoutes } from './routes/billing.js';
 import { registerWebhookRoutes } from './routes/webhooks.js';
+import { registerIntegrationRoutes } from './routes/integrations.js';
 import { handleError } from './util/errors.js';
 import './pipeline/nodes/registry.js';
 
@@ -79,6 +80,9 @@ await app.register(registerBillingRoutes);
 
 // Webhooks (Loop Message)
 await app.register(registerWebhookRoutes);
+
+// Integrations (FiduciaryOS, ClearOut, Marrow, Story)
+await app.register(registerIntegrationRoutes);
 
 // ─── Server ───────────────────────────────────────────────────────────────────
 
