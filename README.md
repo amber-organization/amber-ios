@@ -80,19 +80,21 @@ Integrate with Apple Health, Apple Contacts, Location Services, Google Calendar,
 
 ```
 amber/
-  AmberApp/           — iOS Swift app (SwiftUI)
+  AmberApp/               — iOS Swift app (SwiftUI)
   apps/
-    apple/            — iOS Swift app (alternative entry)
-    amberkit/         — Shared UI components
+    apple/                — iOS Swift app entry
+    web/                  — Next.js web app (auth, onboarding, chat)
+    agent/                — macOS computer-use agent (Python + Claude vision)
+    imessage-agent/       — Multi-user iMessage agent (Caleb + Sagar as User #1/#2)
   services/
-    app/              — Fastify REST API (main backend)
-    worker/           — Background job runner (memory extraction, drift detection)
+    app/                  — Fastify REST API (main backend — auth, DB, webhooks, billing)
+    worker/               — Background job runner (memory extraction, drift detection)
   packages/
-    shared-types/     — TypeScript domain types
-    memory-engine/    — Memory ingestion + Claude extraction
-    people-graph/     — Hybrid semantic + structured search
-    storage/          — GCP Cloud Storage adapter
-    prompts/          — Shared prompt templates
+    shared-types/         — TypeScript domain types
+    memory-engine/        — Memory ingestion + Claude extraction
+    people-graph/         — Hybrid semantic + structured search
+    storage/              — GCP Cloud Storage adapter
+    prompts/              — Shared prompt templates
 ```
 
 ---
@@ -136,7 +138,7 @@ See **SETUP.md** for env vars and full configuration.
 
 ## Roadmap
 
-**Now:** iOS app (onboarding, contacts, personality, daily digests), backend API (auth, onboarding, signals, circles, memories, billing), iMessage agent (amber-caleb, amber-sagar).
+**Now:** iOS app (onboarding, contacts, personality, daily digests), backend API (auth, onboarding, signals, circles, memories, billing), iMessage agent (multi-user — Caleb and Sagar as User #1 and #2), web app (auth, onboarding, chat).
 
 **Next:** Stripe subscriptions live, real-time memory sync between agent + app, pgvector semantic search, worker memory extraction.
 
