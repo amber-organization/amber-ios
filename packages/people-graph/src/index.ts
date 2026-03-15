@@ -93,21 +93,23 @@ export async function searchPeople(
   `
   params.push(limit)
 
-  const rows = await deps.runQuery(sql, params) as Person[]
+  const rows = await deps.runQuery(sql, params) as (Person & { semantic_score?: number; recency_score?: number; trust_score?: number })[]
 
   // 4. Build results with reasons
   const results: PersonSearchResult[] = []
-  for (const person of rows) {
+  for (const row of rows) {
+    const { semantic_score, recency_score, trust_score, ...person } = row as any
+    const computedScore = ((semantic_score ?? 0.5) * 0.5) + ((trust_score ?? 0.5) * 0.3) + ((recency_score ?? 0.2) * 0.2)
     const reasons = await generateMatchReasons(person, query, intent, deps.claudeApiKey)
     const openItems = await getOpenActionItems(person.id, userId, deps)
 
     results.push({
       person,
-      score: 0.8, // calculated above in SQL
+      score: Math.round(computedScore * 100) / 100,
       matchReasons: reasons,
       relevantMemories: [],
-      latestInteraction: person.lastInteractionAt,
-      suggestedNextMove: person.nextRecommendedMoveAt ? undefined : await suggestNextMove(person, deps.claudeApiKey),
+      latestInteraction: (person as any).lastInteractionAt,
+      suggestedNextMove: (person as any).nextRecommendedMoveAt ? undefined : await suggestNextMove(person as any, deps.claudeApiKey),
       openActionItems: openItems
     })
   }

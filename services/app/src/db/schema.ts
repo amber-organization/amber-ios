@@ -484,3 +484,13 @@ export const magicLinkTokens = pgTable('magic_link_tokens', {
   usedAt: timestamp('used_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
+
+// ─── Waitlist ─────────────────────────────────────────────────────────────────
+// Collects emails from venture landing pages before public launch.
+
+export const waitlistEntries = pgTable('waitlist_entries', {
+  id: serial('id').primaryKey(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  venture: varchar('venture', { length: 100 }).notNull().default('amber'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});

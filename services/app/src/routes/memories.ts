@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { db, schema } from '../db/client.js';
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { authenticate, AuthenticatedRequest } from '../auth/middleware.js';
 
 const MemoryCreateSchema = z.object({
@@ -71,9 +71,9 @@ export async function registerMemoryRoutes(app: FastifyInstance) {
     const [memory] = await db
       .select()
       .from(schema.memories)
-      .where(eq(schema.memories.id, Number(id)));
+      .where(and(eq(schema.memories.id, Number(id)), eq(schema.memories.userId, req.userId!)));
 
-    if (!memory || memory.userId !== req.userId) {
+    if (!memory) {
       return reply.code(404).send({ error: 'Not found' });
     }
 
@@ -86,14 +86,19 @@ export async function registerMemoryRoutes(app: FastifyInstance) {
   app.delete('/memories/:id', { preHandler: authenticate }, async (req: AuthenticatedRequest, reply) => {
     const { id } = req.params as { id: string };
 
-    const [deleted] = await db
-      .delete(schema.memories)
-      .where(eq(schema.memories.id, Number(id)))
-      .returning();
+    // Check ownership BEFORE deleting (C-4 fix: no TOCTOU)
+    const [existing] = await db
+      .select({ id: schema.memories.id })
+      .from(schema.memories)
+      .where(and(eq(schema.memories.id, Number(id)), eq(schema.memories.userId, req.userId!)));
 
-    if (!deleted || deleted.userId !== req.userId) {
+    if (!existing) {
       return reply.code(404).send({ error: 'Not found' });
     }
+
+    await db
+      .delete(schema.memories)
+      .where(eq(schema.memories.id, Number(id)));
 
     return { deleted: true };
   });

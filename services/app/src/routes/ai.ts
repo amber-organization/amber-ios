@@ -63,7 +63,6 @@ ${memoryContext}`;
         headers: {
           'x-api-key': ANTHROPIC_API_KEY,
           'anthropic-version': '2023-06-01',
-          'anthropic-beta': 'messages-2023-06-01',
           'content-type': 'application/json',
         },
         body: JSON.stringify({

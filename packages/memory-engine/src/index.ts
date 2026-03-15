@@ -72,7 +72,7 @@ Schema:
 
   if (!response.ok) throw new Error(`Claude extraction failed: ${response.status}`)
   const data = await response.json()
-  const text = data.content[0].text.trim()
+  const text = (data.content as any[]).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n').trim()
 
   try {
     return JSON.parse(text)

@@ -307,6 +307,10 @@ export async function registerAgentRoutes(app: FastifyInstance) {
       if (linkToken.usedAt) return reply.redirect(`${APP_BASE_URL}/approved?already=true`);
       if (new Date() > linkToken.expiresAt) return reply.code(401).send({ error: 'Token expired' });
 
+      // Validate token was issued for this specific task (prevents token reuse across tasks)
+      const tokenTaskId = (linkToken.metadata as Record<string, any>)?.taskId;
+      if (tokenTaskId !== taskId) return reply.code(401).send({ error: 'Token not valid for this task' });
+
       // Mark token used
       await db
         .update(schema.magicLinkTokens)

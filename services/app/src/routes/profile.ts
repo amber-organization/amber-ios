@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 import { authenticateAuth0, AuthenticatedRequest } from '../auth/middleware.js';
 import { sha256Hex } from '../util/crypto.js';
 
-const IMMUTABLE_FIELDS = ['birthday', 'almaMater', 'hometown', 'birthdayTime', 'birthLocation'];
+const IMMUTABLE_FIELDS = ['birthday', 'almaMater', 'hometown', 'birthdayTime', 'birthdayLocation'];
 
 const ProfileUpdateSchema = z.object({
   displayName: z.string().min(1).optional(),

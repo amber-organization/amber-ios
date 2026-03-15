@@ -118,14 +118,13 @@ export async function registerBillingRoutes(app: FastifyInstance) {
     const secret = process.env.STRIPE_WEBHOOK_SECRET;
 
     if (!secret) {
-      app.log.warn('STRIPE_WEBHOOK_SECRET not set — skipping signature check');
+      app.log.error('STRIPE_WEBHOOK_SECRET not set — refusing webhook');
+      return reply.code(500).send({ error: 'Webhook not configured' });
     }
 
     let event: Stripe.Event;
     try {
-      event = secret
-        ? stripe.webhooks.constructEvent((req as any).rawBody as Buffer, sig, secret)
-        : (req.body as Stripe.Event);
+      event = stripe.webhooks.constructEvent((req as any).rawBody as Buffer, sig, secret);
     } catch (err: any) {
       app.log.error({ err }, 'Stripe webhook signature verification failed');
       return reply.code(400).send({ error: `Webhook error: ${err.message}` });

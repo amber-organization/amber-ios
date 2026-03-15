@@ -5,11 +5,22 @@
  * SIGNAL-04: Shared calendar event detection
  * SIGNAL-05: Questionnaire match signals
  */
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { db, schema } from '../db/client.js';
 import { eq, and, inArray, lte, gte, isNull } from 'drizzle-orm';
 import { authenticate, AuthenticatedRequest } from '../auth/middleware.js';
+
+const AGENT_SECRET = process.env.AMBER_AGENT_SECRET;
+
+function authenticateAgent(req: FastifyRequest, reply: FastifyReply, done: () => void) {
+  const secret = req.headers['x-agent-secret'];
+  if (!AGENT_SECRET || secret !== AGENT_SECRET) {
+    reply.code(401).send({ error: 'unauthorized' });
+    return;
+  }
+  done();
+}
 
 const ReactSchema = z.object({
   action: z.enum(['acted', 'dismissed']),
@@ -362,9 +373,11 @@ export async function registerSignalRoutes(app: FastifyInstance) {
    * POST /signals/dispatch
    * SIGNAL-02: Internal job endpoint — sends pending signals as APNs push notifications.
    * In production this is called by Cloud Tasks on a daily schedule.
+   * Authenticated via X-Agent-Secret (not user JWT — Cloud Tasks cannot provide one).
    */
-  app.post('/signals/dispatch', { preHandler: authenticate }, async (req: AuthenticatedRequest) => {
-    const userId = req.userId!;
+  app.post('/signals/dispatch', { preHandler: authenticateAgent }, async (req: FastifyRequest) => {
+    const { userId } = req.body as { userId: number };
+    if (!userId) return { dispatched: 0 };
     const now = new Date();
 
     const pending = await db

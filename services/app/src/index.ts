@@ -23,6 +23,7 @@ import { registerBillingRoutes } from './routes/billing.js';
 import { registerWebhookRoutes } from './routes/webhooks.js';
 import { registerIntegrationRoutes } from './routes/integrations.js';
 import { registerAgentRoutes } from './routes/agent.js';
+import { registerWaitlistRoutes } from './routes/waitlist.js';
 import { handleError } from './util/errors.js';
 import './pipeline/nodes/registry.js';
 
@@ -87,6 +88,9 @@ await app.register(registerIntegrationRoutes);
 
 // macOS Agent
 await app.register(registerAgentRoutes);
+
+// Venture waitlists
+await app.register(registerWaitlistRoutes);
 
 // ─── Server ───────────────────────────────────────────────────────────────────
 

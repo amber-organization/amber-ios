@@ -1,8 +1,10 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { db, schema } from '../db/client.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { authenticate, AuthenticatedRequest } from '../auth/middleware.js';
+
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
 const InsightCreateSchema = z.object({
   priority: z.enum(['high', 'medium', 'low']).default('medium'),
@@ -73,17 +75,73 @@ export async function registerInsightRoutes(app: FastifyInstance) {
    * Generate AI insights from graph context (for authenticated user)
    */
   app.post('/insights/generate', { preHandler: authenticate }, async (req: AuthenticatedRequest, reply) => {
-    // TODO: Call LLM with graph context, calendar, weather to generate insights
+    if (!ANTHROPIC_API_KEY) {
+      return reply.code(503).send({ error: 'AI not configured' });
+    }
+
+    const userId = req.userId!;
+    const { topic = 'health' } = req.body as { topic?: string };
+
+    // Load recent memories for context
+    const memories = await db
+      .select()
+      .from(schema.memories)
+      .where(eq(schema.memories.userId, userId))
+      .orderBy(desc(schema.memories.createdAt))
+      .limit(20);
+
+    const memoryContext = memories.length > 0
+      ? memories.map((m) => `- ${m.summary ?? m.rawContent}`).join('\n')
+      : 'No memories yet.';
+
+    const prompt = `You are Amber, analyzing a user's ${topic} health based on their recent memories.
+Generate one actionable insight with a specific recommendation.
+
+Recent memories:
+${memoryContext}
+
+Respond with JSON only:
+{"priority": "high"|"medium"|"low", "topic": "${topic}", "content": "specific insight and recommendation", "sources": ["source1", "source2"]}`;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 300,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!res.ok) {
+      return reply.code(502).send({ error: 'AI generation failed' });
+    }
+
+    const data = await res.json() as any;
+    const text = (data.content as any[]).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n').trim();
+
+    let parsed: { priority: string; topic: string; content: string; sources: string[] };
+    try {
+      parsed = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
+    } catch {
+      return reply.code(502).send({ error: 'Failed to parse AI response' });
+    }
+
     const [insight] = await db
       .insert(schema.insights)
       .values({
-        userId: req.userId!,
-        priority: 'medium',
-        topic: 'health',
-        content: "Dad mentioned knee pain 3 weeks ago. Weather is rainy today; ask him how his joints feel.",
-        sources: ['Last chat 3 days ago', 'HealthKit trend'],
+        userId,
+        priority: (parsed.priority as any) || 'medium',
+        topic: (parsed.topic as any) || topic as any,
+        content: parsed.content || '',
+        sources: parsed.sources || [],
       })
       .returning();
+
     reply.code(201);
     return insight;
   });

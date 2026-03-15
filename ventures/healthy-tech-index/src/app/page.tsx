@@ -26,6 +26,22 @@ function ScoreBar({ score }: { score: number }) {
 export default function Home() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+    } finally {
+      setLoading(false);
+      setSubmitted(true);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-black text-white font-sans">
@@ -107,7 +123,7 @@ export default function Home() {
             Thanks — you&apos;re on the list.
           </div>
         ) : (
-          <form onSubmit={(e) => { e.preventDefault(); setSubmitted(true); }} className="flex gap-2">
+          <form onSubmit={handleSubmit} className="flex gap-2">
             <input
               type="email"
               required
@@ -118,9 +134,10 @@ export default function Home() {
             />
             <button
               type="submit"
-              className="bg-[#22c55e] hover:bg-[#16a34a] text-black text-sm font-medium px-5 py-3 rounded-xl transition-colors whitespace-nowrap"
+              disabled={loading}
+              className="bg-[#22c55e] hover:bg-[#16a34a] text-black text-sm font-medium px-5 py-3 rounded-xl transition-colors whitespace-nowrap disabled:opacity-60"
             >
-              Join waitlist
+              {loading ? "..." : "Join waitlist"}
             </button>
           </form>
         )}

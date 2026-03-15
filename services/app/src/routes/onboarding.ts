@@ -336,11 +336,14 @@ export async function registerOnboardingRoutes(app: FastifyInstance) {
     const sig = req.headers['stripe-signature'] as string;
     const secret = process.env.STRIPE_WEBHOOK_SECRET;
 
+    if (!secret) {
+      app.log.error('STRIPE_WEBHOOK_SECRET not set — refusing webhook');
+      return reply.code(500).send({ error: 'Webhook not configured' });
+    }
+
     let event: Stripe.Event;
     try {
-      event = secret
-        ? stripe.webhooks.constructEvent((req as any).rawBody as Buffer, sig, secret)
-        : (req.body as Stripe.Event);
+      event = stripe.webhooks.constructEvent((req as any).rawBody as Buffer, sig, secret);
     } catch (err: any) {
       return reply.code(400).send({ error: err.message });
     }
