@@ -157,9 +157,20 @@ export async function registerSignalRoutes(app: FastifyInstance) {
   app.post(
     '/signals/ingest/contacts',
     { preHandler: authenticate },
-    async (req: AuthenticatedRequest) => {
-      const { contacts } = ContactBatchSchema.parse(req.body);
+    async (req: AuthenticatedRequest, reply: FastifyReply) => {
       const userId = req.userId!;
+
+      // PRIVACY-01: reject if user has opted out of contact sync
+      const [userRow] = await db
+        .select({ privacyTier: schema.users.privacyTier })
+        .from(schema.users)
+        .where(eq(schema.users.id, userId))
+        .limit(1);
+      if (!userRow || userRow.privacyTier === 'local_only') {
+        return reply.code(403).send({ error: 'Contact sync not permitted for this privacy tier' });
+      }
+
+      const { contacts } = ContactBatchSchema.parse(req.body);
       const now = new Date();
       const thisYear = now.getFullYear();
 
@@ -261,9 +272,20 @@ export async function registerSignalRoutes(app: FastifyInstance) {
   app.post(
     '/signals/ingest/calendar',
     { preHandler: authenticate },
-    async (req: AuthenticatedRequest) => {
-      const { events } = CalendarEventSchema.parse(req.body);
+    async (req: AuthenticatedRequest, reply: FastifyReply) => {
       const userId = req.userId!;
+
+      // PRIVACY-01: reject if user has opted out of calendar sync
+      const [userRow] = await db
+        .select({ privacyTier: schema.users.privacyTier })
+        .from(schema.users)
+        .where(eq(schema.users.id, userId))
+        .limit(1);
+      if (!userRow || userRow.privacyTier === 'local_only') {
+        return reply.code(403).send({ error: 'Contact sync not permitted for this privacy tier' });
+      }
+
+      const { events } = CalendarEventSchema.parse(req.body);
       let signalsCreated = 0;
 
       // Resolve attendee external IDs → contact rows for this user

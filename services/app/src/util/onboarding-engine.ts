@@ -54,50 +54,55 @@ export function getNextStep(current: OnboardingStep): OnboardingStep {
 async function parseWithClaude(step: string, userText: string): Promise<Record<string, any> | null> {
   if (!ANTHROPIC_API_KEY) return null;
 
-  const systemPrompts: Record<string, string> = {
+  const systemInstructions: Record<string, string> = {
     basics: `Extract the user's name and desired username from their message.
 Return JSON: {"displayName": "Full Name", "username": "suggested_username"}
-If no username is given, derive one from the name (lowercase, no spaces, e.g. "johndoe").
-Message: "${userText}"`,
+If no username is given, derive one from the name (lowercase, no spaces, e.g. "johndoe").`,
 
     birthday: `Extract a birthday from this message. Return ISO date string.
 Return JSON: {"birthday": "YYYY-MM-DD"}
-If no valid date found, return {"birthday": null}
-Message: "${userText}"`,
+If no valid date found, return {"birthday": null}`,
 
     location: `Extract current city and optionally hometown from this message.
-Return JSON: {"currentCity": "City, State", "hometown": "City, State or null"}
-Message: "${userText}"`,
+Return JSON: {"currentCity": "City, State", "hometown": "City, State or null"}`,
 
     education: `Extract school/university name from this message.
 Return JSON: {"almaMater": "University Name or null"}
-If user skips, return {"almaMater": null}
-Message: "${userText}"`,
+If user skips, return {"almaMater": null}`,
 
     permissions: `User acknowledged the permissions step. Return: {"acknowledged": true}`,
 
     privacy_tier: `Extract privacy preference from this message.
 User chose one of: 1=private, 2=selective, 3=full social
-Return JSON: {"tier": "local_only" | "selective_cloud" | "full_social"}
-Message: "${userText}"`,
+Return JSON: {"tier": "local_only" | "selective_cloud" | "full_social"}`,
   };
 
-  const prompt = systemPrompts[step];
-  if (!prompt) return null;
+  const systemInstruction = systemInstructions[step];
+  if (!systemInstruction) return null;
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 200,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  });
+  // User text is passed as a user-role message, not injected into the system prompt
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  let res: Response;
+  try {
+    res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 200,
+        system: systemInstruction,
+        messages: [{ role: 'user', content: userText }],
+      }),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!res.ok) return null;
 

@@ -90,6 +90,11 @@ export async function registerProfileRoutes(app: FastifyInstance) {
       .where(eq(schema.userProfiles.userId, req.userId!))
       .returning();
 
+    // If privacyTier was updated, also sync to the authoritative users table
+    if (body.privacyTier !== undefined) {
+      await db.update(schema.users).set({ privacyTier: body.privacyTier }).where(eq(schema.users.id, req.userId!));
+    }
+
     // Regenerate content hash
     const contentHash = sha256Hex(JSON.stringify(updatedProfile));
     const [finalProfile] = await db

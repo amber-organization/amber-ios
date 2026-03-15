@@ -103,19 +103,27 @@ ${memoryContext}
 Respond with JSON only:
 {"priority": "high"|"medium"|"low", "topic": "${topic}", "content": "specific insight and recommendation", "sources": ["source1", "source2"]}`;
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 300,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    let res: Response;
+    try {
+      res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 300,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!res.ok) {
       return reply.code(502).send({ error: 'AI generation failed' });
@@ -124,19 +132,30 @@ Respond with JSON only:
     const data = await res.json() as any;
     const text = (data.content as any[]).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n').trim();
 
-    let parsed: { priority: string; topic: string; content: string; sources: string[] };
-    try {
-      parsed = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
-    } catch {
-      return reply.code(502).send({ error: 'Failed to parse AI response' });
+    // Find and parse first valid JSON object in the response
+    function extractJson(t: string): Record<string, any> | null {
+      const matches = t.match(/\{[\s\S]*?\}/g);
+      if (!matches) return null;
+      for (const m of matches) {
+        try { return JSON.parse(m); } catch { /* try next */ }
+      }
+      return null;
     }
+    const parsed = extractJson(text);
+    if (!parsed) return reply.code(502).send({ error: 'Failed to parse AI response' });
+
+    // Validate AI-generated enum values before DB insert
+    const VALID_PRIORITIES = ['high', 'medium', 'low'];
+    const VALID_TOPICS = ['health', 'connection', 'memory'];
+    const priority = VALID_PRIORITIES.includes(parsed.priority) ? parsed.priority : 'medium';
+    const validatedTopic = VALID_TOPICS.includes(parsed.topic) ? parsed.topic : 'health';
 
     const [insight] = await db
       .insert(schema.insights)
       .values({
         userId,
-        priority: (parsed.priority as any) || 'medium',
-        topic: (parsed.topic as any) || topic as any,
+        priority: priority as any,
+        topic: validatedTopic as any,
         content: parsed.content || '',
         sources: parsed.sources || [],
       })

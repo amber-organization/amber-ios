@@ -22,14 +22,16 @@ export async function registerMemoryRoutes(app: FastifyInstance) {
    * List memories for authenticated user, optionally filtered by personId
    */
   app.get('/memories', { preHandler: authenticate }, async (req: AuthenticatedRequest) => {
-    const { personId, limit = 20 } = req.query as { personId?: string; limit?: number };
+    const { personId, limit: limitParam } = req.query as { personId?: string; limit?: string };
+    const rawLimit = Number(limitParam ?? 20);
+    const limit = Math.min(Math.max(isNaN(rawLimit) ? 20 : rawLimit, 1), 100);
 
     const rows = await db
       .select()
       .from(schema.memories)
       .where(eq(schema.memories.userId, req.userId!))
       .orderBy(desc(schema.memories.createdAt))
-      .limit(Number(limit));
+      .limit(limit);
 
     if (personId) {
       return rows.filter((m) => (m.personIds as number[]).includes(Number(personId)));

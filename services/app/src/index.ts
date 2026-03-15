@@ -46,14 +46,17 @@ app.addContentTypeParser('application/json', { parseAs: 'buffer' }, function (_r
 });
 
 // CORS
+const extraOrigins = process.env.CORS_EXTRA_ORIGINS
+  ? process.env.CORS_EXTRA_ORIGINS.split(',').map((o) => o.trim())
+  : [];
+
 await app.register(cors, {
   origin: [
     'https://amber.health',
     'https://www.amber.health',
-    /^https:\/\/.*\.vercel\.app$/,
-    /^https:\/\/.*\.railway\.app$/,
     'http://localhost:3000',
     'http://localhost:3001',
+    ...extraOrigins,
   ],
   credentials: true,
 });

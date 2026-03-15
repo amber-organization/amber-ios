@@ -11,17 +11,24 @@ export async function sendMessage(to: string, sender: string, text: string): Pro
     ? text.substring(0, MAX_LENGTH - 30) + '\n\n[Message truncated]'
     : text
 
-  const res = await fetch('https://a.loopmessage.com/api/v1/message/send/', {
-    method: 'POST',
-    headers: {
-      'Authorization': LOOP_API_KEY,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ contact: to, text: body, sender }),
-  })
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 10000)
+  try {
+    const res = await fetch('https://a.loopmessage.com/api/v1/message/send/', {
+      method: 'POST',
+      headers: {
+        'Authorization': LOOP_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ contact: to, text: body, sender }),
+      signal: controller.signal,
+    })
 
-  if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`Loop Message error ${res.status}: ${err}`)
+    if (!res.ok) {
+      const err = await res.text()
+      throw new Error(`Loop Message error ${res.status}: ${err}`)
+    }
+  } finally {
+    clearTimeout(timeoutId)
   }
 }

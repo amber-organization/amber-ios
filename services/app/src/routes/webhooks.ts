@@ -56,12 +56,19 @@ ${userContext || 'No profile set up yet.'}`;
 
 export async function sendLoopMessage(phone: string, text: string) {
   if (!LOOP_API_KEY || !LOOP_SENDER_ID) return;
-  const res = await fetch('https://a.loopmessage.com/api/v1/message/send/', {
-    method: 'POST',
-    headers: { Authorization: LOOP_API_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contact: phone, text, sender: LOOP_SENDER_ID }),
-  });
-  if (!res.ok) throw new Error(`Loop ${res.status}`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  try {
+    const res = await fetch('https://a.loopmessage.com/api/v1/message/send/', {
+      method: 'POST',
+      headers: { Authorization: LOOP_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contact: phone, text, sender: LOOP_SENDER_ID }),
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`Loop ${res.status}`);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 // ── Claude call ──────────────────────────────────────────────────────────────
@@ -72,28 +79,35 @@ async function callAmber(
 ): Promise<string> {
   if (!ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not set');
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
-      system: buildAmberSystemPrompt(userContext),
-      messages,
-    }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1024,
+        system: buildAmberSystemPrompt(userContext),
+        messages,
+      }),
+      signal: controller.signal,
+    });
 
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Anthropic ${res.status}: ${err}`);
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Anthropic ${res.status}: ${err}`);
+    }
+
+    const data = await res.json() as any;
+    return (data.content as any[]).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n').trim();
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const data = await res.json() as any;
-  return (data.content as any[]).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n').trim();
 }
 
 // ── Load user context ────────────────────────────────────────────────────────
@@ -188,11 +202,13 @@ async function processMessage(
 async function createProvisionalUser(phone: string): Promise<number> {
   // privyUserId is required (notNull) — use a provisional placeholder.
   // auth0UserId marks it as an iMessage-originated account.
-  // When they later sign up via web/iOS, the phone field on userProfiles links accounts.
+  // MERGE REQUIREMENT: when the user later signs up via web/iOS with a matching phone,
+  // POST /auth/verify must detect this provisional record (by loop:<phone> privyUserId)
+  // and update it with the real Privy user ID instead of creating a duplicate account.
   const [user] = await db
     .insert(schema.users)
     .values({
-      privyUserId: `provisional:imessage:${phone}`,
+      privyUserId: `loop:${phone}`,
       auth0UserId: `imessage:${phone}`,
     })
     .returning();

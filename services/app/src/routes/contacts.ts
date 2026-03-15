@@ -15,8 +15,8 @@ const PersonCreateSchema = z.object({
 });
 
 const RelationshipCreateSchema = z.object({
-  fromId: z.string(),
-  toId: z.string(),
+  fromId: z.coerce.number().int().positive(),
+  toId: z.coerce.number().int().positive(),
   type: z.enum(['parent', 'sibling', 'partner', 'child', 'other']),
   strength: z.number().min(0).max(100).optional(),
 });
@@ -136,8 +136,8 @@ export async function registerContactRoutes(app: FastifyInstance) {
    */
   app.post('/relationships', { preHandler: authenticate }, async (req: AuthenticatedRequest, reply) => {
     const body = RelationshipCreateSchema.parse(req.body);
-    const fromId = Number(body.fromId);
-    const toId = Number(body.toId);
+    const fromId = body.fromId;
+    const toId = body.toId;
 
     // Verify both persons belong to user
     const [fromPerson] = await db

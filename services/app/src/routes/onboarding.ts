@@ -42,12 +42,19 @@ async function sendWelcomeText(phone: string, name?: string) {
   const firstName = name?.split(' ')[0] || 'there';
   const message = `Hey ${firstName}! I'm Amber — your personal health network. I track six dimensions of your wellbeing: spiritual, emotional, physical, intellectual, social, and financial.\n\nTo get started, what's your full name, and what city do you live in?`;
 
-  const res = await fetch('https://a.loopmessage.com/api/v1/message/send/', {
-    method: 'POST',
-    headers: { Authorization: apiKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contact: phone, text: message, sender: senderId }),
-  });
-  if (!res.ok) throw new Error(`Loop Message ${res.status}`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  try {
+    const res = await fetch('https://a.loopmessage.com/api/v1/message/send/', {
+      method: 'POST',
+      headers: { Authorization: apiKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contact: phone, text: message, sender: senderId }),
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`Loop Message ${res.status}`);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 const STEP_ORDER = ['welcome', 'basics', 'birthday', 'location', 'education', 'permissions', 'privacy_tier', 'complete'] as const;

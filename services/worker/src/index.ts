@@ -51,22 +51,30 @@ async function extractPendingMemories() {
 
     for (const memory of pending) {
       try {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'x-api-key': ANTHROPIC_API_KEY,
-            'anthropic-version': '2023-06-01',
-            'content-type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'claude-haiku-4-5-20251001',
-            max_tokens: 512,
-            messages: [{
-              role: 'user',
-              content: `Extract a concise 1-2 sentence summary of this memory. Focus on the person, key fact, and emotional context.\n\nMemory: ${memory.raw_content}\n\nReturn only the summary text.`,
-            }],
-          }),
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        let res: Response;
+        try {
+          res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'x-api-key': ANTHROPIC_API_KEY,
+              'anthropic-version': '2023-06-01',
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'claude-haiku-4-5-20251001',
+              max_tokens: 512,
+              messages: [{
+                role: 'user',
+                content: `Extract a concise 1-2 sentence summary of this memory. Focus on the person, key fact, and emotional context.\n\nMemory: ${memory.raw_content}\n\nReturn only the summary text.`,
+              }],
+            }),
+            signal: controller.signal,
+          });
+        } finally {
+          clearTimeout(timeoutId);
+        }
 
         if (!res.ok) continue;
         const data = await res.json() as any;
@@ -115,7 +123,7 @@ async function detectRelationshipDrift() {
           'questionnaire_match',
           NOW(),
           'pending',
-          ${JSON.stringify({ personId: person.id, personName: person.name, reason: 'relationship_drift', lastMemory: person.last_memory })},
+          ${JSON.stringify({ personId: person.id, personName: person.name, signalKind: 'relationship_drift', reason: 'relationship_drift', lastMemory: person.last_memory })},
           ${dedupeKey},
           NOW()
         )

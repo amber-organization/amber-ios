@@ -20,10 +20,14 @@ export async function registerAiRoutes(app: FastifyInstance) {
       return reply.code(503).send({ error: 'AI not configured' });
     }
 
-    const { dimension = 'general', prompt = '' } = req.query as {
+    const { dimension, prompt } = req.query as {
       dimension?: string;
       prompt?: string;
     };
+
+    // Sanitize user input before injecting into prompts
+    const safeDimension = (dimension || 'general').replace(/[^\w\s-]/g, '').slice(0, 50);
+    const safePrompt = (prompt || '').slice(0, 1000);
 
     const userId = req.userId!;
 
@@ -39,9 +43,9 @@ export async function registerAiRoutes(app: FastifyInstance) {
       ? memories.map((m) => `- ${m.summary ?? m.rawContent}`).join('\n')
       : 'No memories yet.';
 
-    const systemPrompt = `You are Amber, a personal health network assistant analyzing the user's ${dimension} health dimension.
+    const systemPrompt = `You are Amber, a personal health network assistant analyzing the user's ${safeDimension} health dimension.
 You have access to their recent memories and relationship patterns.
-Be warm, concise, and insightful. Focus on the ${dimension} dimension specifically.
+Be warm, concise, and insightful. Focus on the ${safeDimension} dimension specifically.
 Recent memories:
 ${memoryContext}`;
 
@@ -57,26 +61,34 @@ ${memoryContext}`;
     try {
       send({ type: 'start' });
 
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 512,
-          stream: true,
-          system: systemPrompt,
-          messages: [
-            {
-              role: 'user',
-              content: prompt || `Give me a brief insight about my ${dimension} health based on my recent memories.`,
-            },
-          ],
-        }),
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      let res: Response;
+      try {
+        res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 512,
+            stream: true,
+            system: systemPrompt,
+            messages: [
+              {
+                role: 'user',
+                content: safePrompt || `Give me a brief insight about my ${safeDimension} health based on my recent memories.`,
+              },
+            ],
+          }),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!res.ok || !res.body) {
         send({ type: 'error', message: `Anthropic ${res.status}` });
