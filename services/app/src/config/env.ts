@@ -66,6 +66,28 @@ export const config = {
     host: optionalEnv('HOST', '0.0.0.0'),
   },
 
+  // Stripe (billing)
+  stripe: {
+    secretKey: optionalEnv('STRIPE_SECRET_KEY'),
+    webhookSecret: optionalEnv('STRIPE_WEBHOOK_SECRET'),
+    prices: {
+      proMonthly: optionalEnv('STRIPE_PRICE_PRO_MONTHLY'),
+      proAnnual: optionalEnv('STRIPE_PRICE_PRO_ANNUAL'),
+      teamMonthly: optionalEnv('STRIPE_PRICE_TEAM_MONTHLY'),
+    },
+  },
+
+  // AI
+  anthropic: {
+    apiKey: optionalEnv('ANTHROPIC_API_KEY'),
+  },
+
+  // Loop Message (iMessage delivery)
+  loopMessage: {
+    apiKey: optionalEnv('LOOP_API_KEY'),
+    webhookSecret: optionalEnv('LOOP_WEBHOOK_SECRET'),
+  },
+
   // Environment
   env: optionalEnv('NODE_ENV', 'development'),
   isDevelopment: optionalEnv('NODE_ENV', 'development') === 'development',

@@ -16,6 +16,11 @@ import { registerPrivacyRoutes } from './routes/privacy.js';
 import { registerSignalRoutes } from './routes/signals.js';
 import { registerCircleRoutes } from './routes/circles.js';
 import { registerProfileRoutes } from './routes/profile.js';
+import { registerMemoryRoutes } from './routes/memories.js';
+import { registerActionItemRoutes } from './routes/action-items.js';
+import { registerApprovalRoutes } from './routes/approvals.js';
+import { registerBillingRoutes } from './routes/billing.js';
+import { registerWebhookRoutes } from './routes/webhooks.js';
 import { handleError } from './util/errors.js';
 import './pipeline/nodes/registry.js';
 
@@ -57,6 +62,17 @@ await app.register(registerOnboardingRoutes); // ONBOARD-01/02
 await app.register(registerPrivacyRoutes);    // PRIVACY-01
 await app.register(registerSignalRoutes);     // SIGNAL-01/02/03/04/05
 await app.register(registerCircleRoutes);     // SOCIAL-01
+
+// Memory Engine + Relationship Intelligence
+await app.register(registerMemoryRoutes);
+await app.register(registerActionItemRoutes);
+await app.register(registerApprovalRoutes);
+
+// Billing
+await app.register(registerBillingRoutes);
+
+// Webhooks (Loop Message)
+await app.register(registerWebhookRoutes);
 
 // ─── Server ───────────────────────────────────────────────────────────────────
 

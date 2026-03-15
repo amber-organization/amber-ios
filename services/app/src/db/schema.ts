@@ -224,36 +224,12 @@ export const anchors = pgTable('anchors', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-// --- New enums ---
-export const privacyTierEnum = pgEnum('privacy_tier', ['local_only', 'selective_cloud', 'full_social']);
-export const signalTypeEnum = pgEnum('signal_type', ['birthday', 'shared_event', 'questionnaire_match', 'health_sync', 'location_proximity', 'interest_overlap']);
-export const signalStatusEnum = pgEnum('signal_status', ['pending', 'sent', 'seen', 'acted_on', 'dismissed', 'expired']);
+// Additional enums for GCP/Onboarding features
 export const notificationStatusEnum = pgEnum('notification_status', ['queued', 'sent', 'delivered', 'opened', 'failed']);
 export const circleTypeEnum = pgEnum('circle_type', ['auto', 'manual']);
 export const personalityTypeEnum = pgEnum('personality_type', ['horoscope', 'myers_briggs', 'enneagram', 'big_five']);
 export const devicePlatformEnum = pgEnum('device_platform', ['ios', 'android']);
 export const onboardingStepEnum = pgEnum('onboarding_step', ['welcome', 'basics', 'birthday', 'location', 'education', 'permissions', 'privacy_tier', 'complete']);
-
-// User profiles (onboarding immutable objects)
-export const userProfiles = pgTable('user_profiles', {
-  id: serial('id').primaryKey(),
-  userId: integer('user_id').references(() => users.id).notNull().unique(),
-  displayName: varchar('display_name', { length: 100 }),
-  username: varchar('username', { length: 50 }).unique(),
-  birthday: timestamp('birthday', { withTimezone: true }).notNull(),
-  birthdayTime: varchar('birthday_time', { length: 10 }),
-  birthLocation: varchar('birth_location', { length: 255 }),
-  almaMater: varchar('alma_mater', { length: 255 }),
-  hometown: varchar('hometown', { length: 255 }),
-  currentCity: varchar('current_city', { length: 255 }),
-  bio: text('bio'),
-  avatarUrl: varchar('avatar_url', { length: 500 }),
-  privacyTier: privacyTierEnum('privacy_tier').default('selective_cloud'),
-  contentHash: varchar('content_hash', { length: 66 }),
-  onboardingCompletedAt: timestamp('onboarding_completed_at', { withTimezone: true }),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-});
 
 // Onboarding progress (tracks wizard state)
 export const onboardingProgress = pgTable('onboarding_progress', {
@@ -278,20 +254,6 @@ export const personalityProfiles = pgTable('personality_profiles', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-// Signals (detected connection signals)
-export const signals = pgTable('signals', {
-  id: serial('id').primaryKey(),
-  signalType: signalTypeEnum('signal_type').notNull(),
-  sourceUserId: integer('source_user_id').references(() => users.id).notNull(),
-  targetUserId: integer('target_user_id').references(() => users.id),
-  data: jsonb('data').notNull(),
-  priority: insightPriorityEnum('priority').default('medium'),
-  status: signalStatusEnum('status').default('pending'),
-  expiresAt: timestamp('expires_at', { withTimezone: true }),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-});
-
 // Notifications (push notification log)
 export const notifications = pgTable('notifications', {
   id: serial('id').primaryKey(),
@@ -307,27 +269,6 @@ export const notifications = pgTable('notifications', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
-// Circles (friend groups)
-export const circles = pgTable('circles', {
-  id: serial('id').primaryKey(),
-  ownerId: integer('owner_id').references(() => users.id).notNull(),
-  name: varchar('name', { length: 100 }).notNull(),
-  type: circleTypeEnum('type').default('manual'),
-  source: varchar('source', { length: 50 }),
-  metadata: jsonb('metadata'),
-  contentHash: varchar('content_hash', { length: 66 }),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-});
-
-// Circle members (junction table)
-export const circleMembers = pgTable('circle_members', {
-  id: serial('id').primaryKey(),
-  circleId: integer('circle_id').references(() => circles.id).notNull(),
-  personId: integer('person_id').references(() => persons.id).notNull(),
-  addedAt: timestamp('added_at', { withTimezone: true }).defaultNow(),
-});
-
 // Device tokens (for push notifications)
 export const deviceTokens = pgTable('device_tokens', {
   id: serial('id').primaryKey(),
@@ -335,6 +276,100 @@ export const deviceTokens = pgTable('device_tokens', {
   token: varchar('token', { length: 500 }).notNull(),
   platform: devicePlatformEnum('platform').notNull(),
   isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ─── Memory Engine Tables ─────────────────────────────────────────────────────
+
+export const memorySourceEnum = pgEnum('memory_source', [
+  'manual_note', 'imessage', 'email', 'call', 'meeting',
+  'photo', 'health_signal', 'location_signal', 'social_media', 'fireflies', 'loom',
+]);
+
+export const actionItemStatusEnum = pgEnum('action_item_status', [
+  'open', 'pending', 'completed', 'cancelled',
+]);
+
+export const approvalStatusEnum = pgEnum('approval_status', [
+  'pending', 'approved', 'rejected', 'edited',
+]);
+
+export const actionItemPriorityEnum = pgEnum('action_item_priority', [
+  'urgent', 'high', 'normal', 'low',
+]);
+
+// Memories — relationship intelligence captured from any source
+export const memories = pgTable('memories', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  personIds: jsonb('person_ids').$type<number[]>().default([]),
+  source: memorySourceEnum('source').notNull(),
+  rawContent: text('raw_content').notNull(),
+  summary: text('summary'),
+  traits: jsonb('traits').$type<string[]>().default([]),
+  emotionalLabel: varchar('emotional_label', { length: 100 }),
+  trustSignals: jsonb('trust_signals').$type<string[]>().default([]),
+  lifeEvents: jsonb('life_events').$type<string[]>().default([]),
+  isActionable: boolean('is_actionable').default(false),
+  confidence: integer('confidence').default(80),
+  privacyTier: privacyTierEnum('privacy_tier').default('selective'),
+  tags: jsonb('tags').$type<string[]>().default([]),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Action items — follow-ups extracted from memories
+export const actionItems = pgTable('action_items', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  personIds: jsonb('person_ids').$type<number[]>().default([]),
+  memoryId: integer('memory_id').references(() => memories.id),
+  description: text('description').notNull(),
+  priority: actionItemPriorityEnum('priority').default('normal'),
+  status: actionItemStatusEnum('status').default('open'),
+  dueAt: timestamp('due_at', { withTimezone: true }),
+  requiresApproval: boolean('requires_approval').default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// Approval tasks — actions that need explicit user sign-off before executing
+export const approvalTasks = pgTable('approval_tasks', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull(),
+  actionItemId: integer('action_item_id').references(() => actionItems.id),
+  type: varchar('type', { length: 100 }).notNull(), // e.g. 'send_message', 'calendar_invite'
+  proposedContent: text('proposed_content').notNull(),
+  editedContent: text('edited_content'),
+  status: approvalStatusEnum('status').default('pending'),
+  resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+// ─── Billing (Stripe) ─────────────────────────────────────────────────────────
+
+export const subscriptionStatusEnum = pgEnum('subscription_status', [
+  'trialing', 'active', 'past_due', 'canceled', 'incomplete',
+]);
+
+export const subscriptionPlanEnum = pgEnum('subscription_plan', [
+  'free', 'pro', 'team',
+]);
+
+export const subscriptions = pgTable('subscriptions', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id).notNull().unique(),
+  stripeCustomerId: varchar('stripe_customer_id', { length: 255 }).unique(),
+  stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }).unique(),
+  stripePriceId: varchar('stripe_price_id', { length: 255 }),
+  plan: subscriptionPlanEnum('plan').default('free'),
+  status: subscriptionStatusEnum('status').default('trialing'),
+  trialEndsAt: timestamp('trial_ends_at', { withTimezone: true }),
+  currentPeriodStart: timestamp('current_period_start', { withTimezone: true }),
+  currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
+  cancelAtPeriodEnd: boolean('cancel_at_period_end').default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
