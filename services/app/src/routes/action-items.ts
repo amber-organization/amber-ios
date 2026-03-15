@@ -26,6 +26,8 @@ export async function registerActionItemRoutes(app: FastifyInstance) {
    */
   app.get('/action-items', { preHandler: authenticate }, async (req: AuthenticatedRequest) => {
     const { status = 'open' } = req.query as { status?: string };
+    const VALID_STATUSES = ['open', 'pending', 'completed', 'cancelled'];
+    const safeStatus = VALID_STATUSES.includes(status) ? status : 'open';
 
     return await db
       .select()
@@ -33,7 +35,7 @@ export async function registerActionItemRoutes(app: FastifyInstance) {
       .where(
         and(
           eq(schema.actionItems.userId, req.userId!),
-          eq(schema.actionItems.status, status as any),
+          eq(schema.actionItems.status, safeStatus as any),
         )
       )
       .orderBy(desc(schema.actionItems.createdAt));
@@ -65,6 +67,7 @@ export async function registerActionItemRoutes(app: FastifyInstance) {
    */
   app.patch('/action-items/:id', { preHandler: authenticate }, async (req: AuthenticatedRequest, reply) => {
     const { id } = req.params as { id: string };
+    if (isNaN(Number(id))) return reply.code(400).send({ error: 'invalid id' });
     const body = ActionItemUpdateSchema.parse(req.body);
 
     const [item] = await db

@@ -114,6 +114,10 @@ export async function registerBillingRoutes(app: FastifyInstance) {
   app.post('/billing/portal', { preHandler: authenticate }, async (req: AuthenticatedRequest, reply) => {
     const { returnUrl } = req.body as { returnUrl: string };
 
+    if (!isAllowedRedirectUrl(returnUrl)) {
+      return reply.code(400).send({ error: 'Invalid returnUrl' });
+    }
+
     const [sub] = await db
       .select()
       .from(schema.subscriptions)

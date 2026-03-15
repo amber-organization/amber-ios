@@ -32,6 +32,7 @@ export async function registerApprovalRoutes(app: FastifyInstance) {
    */
   app.patch('/approvals/:id', { preHandler: authenticate }, async (req: AuthenticatedRequest, reply) => {
     const { id } = req.params as { id: string };
+    if (isNaN(Number(id))) return reply.code(400).send({ error: 'invalid id' });
     const body = ApprovalResolveSchema.parse(req.body);
 
     const [task] = await db

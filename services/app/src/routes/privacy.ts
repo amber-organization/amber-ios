@@ -113,7 +113,7 @@ export async function registerPrivacyRoutes(app: FastifyInstance) {
    * Upsert one or many field-level permissions.
    * Server rejects writes for fields the user hasn't opted into (enforced in other routes).
    */
-  app.put('/privacy/permissions', { preHandler: authenticate }, async (req: AuthenticatedRequest) => {
+  app.put('/privacy/permissions', { preHandler: authenticate }, async (req: AuthenticatedRequest, reply) => {
     const { permissions } = BulkPermissionsSchema.parse(req.body);
 
     // Check current tier — local_only cannot enable any sync

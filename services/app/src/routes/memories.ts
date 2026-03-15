@@ -69,6 +69,7 @@ export async function registerMemoryRoutes(app: FastifyInstance) {
    */
   app.get('/memories/:id', { preHandler: authenticate }, async (req: AuthenticatedRequest, reply) => {
     const { id } = req.params as { id: string };
+    if (isNaN(Number(id))) return reply.code(400).send({ error: 'invalid id' });
 
     const [memory] = await db
       .select()
@@ -87,6 +88,7 @@ export async function registerMemoryRoutes(app: FastifyInstance) {
    */
   app.delete('/memories/:id', { preHandler: authenticate }, async (req: AuthenticatedRequest, reply) => {
     const { id } = req.params as { id: string };
+    if (isNaN(Number(id))) return reply.code(400).send({ error: 'invalid id' });
 
     // Check ownership BEFORE deleting (C-4 fix: no TOCTOU)
     const [existing] = await db
@@ -100,7 +102,7 @@ export async function registerMemoryRoutes(app: FastifyInstance) {
 
     await db
       .delete(schema.memories)
-      .where(eq(schema.memories.id, Number(id)));
+      .where(and(eq(schema.memories.id, Number(id)), eq(schema.memories.userId, req.userId!)));
 
     return { deleted: true };
   });

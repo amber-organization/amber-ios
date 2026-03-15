@@ -65,7 +65,9 @@ export async function registerContactRoutes(app: FastifyInstance) {
     '/persons/:id',
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
-      const { id: idStr } = req.params as { id: string }; const id = Number(idStr);
+      const { id: idStr } = req.params as { id: string };
+      const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
       const [person] = await db
         .select()
         .from(schema.persons)
@@ -83,7 +85,9 @@ export async function registerContactRoutes(app: FastifyInstance) {
     '/persons/:id',
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
-      const { id: idStr } = req.params as { id: string }; const id = Number(idStr);
+      const { id: idStr } = req.params as { id: string };
+      const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
       const update = PersonUpdateSchema.parse(req.body);
       const [person] = await db
         .update(schema.persons)
@@ -107,7 +111,9 @@ export async function registerContactRoutes(app: FastifyInstance) {
     '/persons/:id',
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
-      const { id: idStr } = req.params as { id: string }; const id = Number(idStr);
+      const { id: idStr } = req.params as { id: string };
+      const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
       const [person] = await db
         .delete(schema.persons)
         .where(and(eq(schema.persons.id, id), eq(schema.persons.userId, req.userId!)))
@@ -177,7 +183,9 @@ export async function registerContactRoutes(app: FastifyInstance) {
     '/relationships/:id',
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
-      const { id: idStr } = req.params as { id: string }; const id = Number(idStr);
+      const { id: idStr } = req.params as { id: string };
+      const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
       const [rel] = await db
         .select()
         .from(schema.relationships)
@@ -195,7 +203,9 @@ export async function registerContactRoutes(app: FastifyInstance) {
     '/persons/:personId/relationships',
     { preHandler: authenticate },
     async (req: AuthenticatedRequest) => {
-      const { personId: personIdStr } = req.params as { personId: string }; const personId = Number(personIdStr);
+      const { personId: personIdStr } = req.params as { personId: string };
+      const personId = Number(personIdStr);
+      if (isNaN(personId)) return [];
       
       // Verify person belongs to user
       const [person] = await db

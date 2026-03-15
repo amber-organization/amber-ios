@@ -20,10 +20,22 @@ export async function registerInsightRoutes(app: FastifyInstance) {
    */
   app.get('/insights', { preHandler: authenticate }, async (req: AuthenticatedRequest) => {
     const { priority, topic } = req.query as { priority?: string; topic?: string };
+    const VALID_PRIORITIES = ['high', 'medium', 'low'] as const;
+    const VALID_TOPICS = ['health', 'connection', 'memory'] as const;
     const conditions = [eq(schema.insights.userId, req.userId!)];
-    
-    if (priority) conditions.push(eq(schema.insights.priority, priority as any));
-    if (topic) conditions.push(eq(schema.insights.topic, topic as any));
+
+    if (priority) {
+      if (!(VALID_PRIORITIES as readonly string[]).includes(priority)) {
+        return [];
+      }
+      conditions.push(eq(schema.insights.priority, priority as any));
+    }
+    if (topic) {
+      if (!(VALID_TOPICS as readonly string[]).includes(topic)) {
+        return [];
+      }
+      conditions.push(eq(schema.insights.topic, topic as any));
+    }
     
     return await db
       .select()
@@ -60,7 +72,9 @@ export async function registerInsightRoutes(app: FastifyInstance) {
     '/insights/:id',
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
-      const { id: idStr } = req.params as { id: string }; const id = Number(idStr);
+      const { id: idStr } = req.params as { id: string };
+      const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
       const [insight] = await db
         .select()
         .from(schema.insights)
@@ -80,7 +94,9 @@ export async function registerInsightRoutes(app: FastifyInstance) {
     }
 
     const userId = req.userId!;
-    const { topic = 'health' } = req.body as { topic?: string };
+    const rawTopic = (req.body as { topic?: string })?.topic ?? 'health';
+    const VALID_GENERATE_TOPICS = ['health', 'connection', 'memory'];
+    const topic = VALID_GENERATE_TOPICS.includes(rawTopic) ? rawTopic : 'health';
 
     // Load recent memories for context
     const memories = await db

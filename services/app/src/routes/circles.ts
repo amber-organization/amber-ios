@@ -78,7 +78,9 @@ export async function registerCircleRoutes(app: FastifyInstance) {
     '/circles/:id',
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
-      const { id: idStr } = req.params as { id: string }; const id = Number(idStr);
+      const { id: idStr } = req.params as { id: string };
+      const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
 
       // Verify user is a member
       const [membership] = await db
@@ -147,7 +149,9 @@ export async function registerCircleRoutes(app: FastifyInstance) {
     '/circles/:id',
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
-      const { id: idStr } = req.params as { id: string }; const id = Number(idStr);
+      const { id: idStr } = req.params as { id: string };
+      const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
 
       const [circle] = await db
         .select()
@@ -173,7 +177,9 @@ export async function registerCircleRoutes(app: FastifyInstance) {
     '/circles/:id/invite',
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
-      const { id: idStr } = req.params as { id: string }; const id = Number(idStr);
+      const { id: idStr } = req.params as { id: string };
+      const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
 
       const [circle] = await db
         .select()
@@ -198,7 +204,9 @@ export async function registerCircleRoutes(app: FastifyInstance) {
     '/circles/:id/members',
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
-      const { id: idStr } = req.params as { id: string }; const id = Number(idStr);
+      const { id: idStr } = req.params as { id: string };
+      const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
 
       const [membership] = await db
         .select()

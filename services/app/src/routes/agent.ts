@@ -109,7 +109,7 @@ export async function registerAgentRoutes(app: FastifyInstance) {
 
     let userId: number;
 
-    if (AGENT_SECRET && agentSecret === AGENT_SECRET) {
+    if (AGENT_SECRET && typeof agentSecret === 'string' && agentSecret.length === AGENT_SECRET.length && crypto.timingSafeEqual(Buffer.from(agentSecret), Buffer.from(AGENT_SECRET))) {
       // Daemon call — must supply userId
       if (!query.userId) return reply.code(400).send({ error: 'userId required for agent calls' });
       userId = parseInt(query.userId, 10);
