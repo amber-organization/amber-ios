@@ -15,6 +15,15 @@ import { registerOnboardingRoutes } from './routes/onboarding.js';
 import { registerPrivacyRoutes } from './routes/privacy.js';
 import { registerSignalRoutes } from './routes/signals.js';
 import { registerCircleRoutes } from './routes/circles.js';
+import { registerProfileRoutes } from './routes/profile.js';
+import { registerMemoryRoutes } from './routes/memories.js';
+import { registerActionItemRoutes } from './routes/action-items.js';
+import { registerApprovalRoutes } from './routes/approvals.js';
+import { registerBillingRoutes } from './routes/billing.js';
+import { registerWebhookRoutes } from './routes/webhooks.js';
+import { registerIntegrationRoutes } from './routes/integrations.js';
+import { registerAgentRoutes } from './routes/agent.js';
+import { registerWaitlistRoutes } from './routes/waitlist.js';
 import { handleError } from './util/errors.js';
 import './pipeline/nodes/registry.js';
 
@@ -24,9 +33,31 @@ const app = Fastify({
   disableRequestLogging: false,
 });
 
+// Raw body capture — required for Stripe webhook signature verification.
+// Fastify's JSON parser is replaced with one that also stores the raw Buffer on req.rawBody.
+app.addContentTypeParser('application/json', { parseAs: 'buffer' }, function (_req, body, done) {
+  try {
+    const parsed = JSON.parse((body as Buffer).toString());
+    (_req as any).rawBody = body;
+    done(null, parsed);
+  } catch (err: any) {
+    done(err, undefined);
+  }
+});
+
 // CORS
+const extraOrigins = process.env.CORS_EXTRA_ORIGINS
+  ? process.env.CORS_EXTRA_ORIGINS.split(',').map((o) => o.trim())
+  : [];
+
 await app.register(cors, {
-  origin: true,
+  origin: [
+    'https://amber.health',
+    'https://www.amber.health',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    ...extraOrigins,
+  ],
   credentials: true,
 });
 
@@ -48,12 +79,33 @@ await app.register(registerAiRoutes);
 await app.register(registerIdentityRoutes);
 await app.register(registerAnchorRoutes);
 await app.register(registerInsightRoutes);
+await app.register(registerProfileRoutes);
 
 // Sprint 1 MVP
-await app.register(registerOnboardingRoutes); // ONBOARD-01/02
+await app.register(registerOnboardingRoutes); // ONBOARD-01/02 (includes public web checkout)
 await app.register(registerPrivacyRoutes);    // PRIVACY-01
 await app.register(registerSignalRoutes);     // SIGNAL-01/02/03/04/05
 await app.register(registerCircleRoutes);     // SOCIAL-01
+
+// Memory Engine + Relationship Intelligence
+await app.register(registerMemoryRoutes);
+await app.register(registerActionItemRoutes);
+await app.register(registerApprovalRoutes);
+
+// Billing
+await app.register(registerBillingRoutes);
+
+// Webhooks (Loop Message)
+await app.register(registerWebhookRoutes);
+
+// Integrations (FiduciaryOS, ClearOut, Marrow, Story, D-NOB)
+await app.register(registerIntegrationRoutes);
+
+// macOS Agent
+await app.register(registerAgentRoutes);
+
+// Venture waitlists
+await app.register(registerWaitlistRoutes);
 
 // ─── Server ───────────────────────────────────────────────────────────────────
 

@@ -4,7 +4,10 @@ import { config } from '../config/env.js';
 import * as schema from './schema.js';
 
 if (!config.database.url) {
-  console.warn('⚠️  DATABASE_URL not set - database operations will fail');
+  if (config.isProduction) {
+    throw new Error('DATABASE_URL is required in production. Set the DATABASE_URL environment variable.');
+  }
+  console.warn('DATABASE_URL not set - database operations will fail');
 }
 
 // Parse DATABASE_URL - handle both Cloud SQL socket and standard postgres URLs

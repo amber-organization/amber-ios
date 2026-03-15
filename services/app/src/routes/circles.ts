@@ -34,7 +34,9 @@ export async function registerCircleRoutes(app: FastifyInstance) {
     if (memberships.length === 0) return [];
 
     const ids = memberships.map((m) => m.circleId);
-    return db.select().from(schema.circles).where(inArray(schema.circles.id, ids));
+    const rows = await db.select().from(schema.circles).where(inArray(schema.circles.id, ids));
+    // Do not expose inviteToken in list responses — use GET /circles/:id/invite
+    return rows.map(({ inviteToken: _inviteToken, ...rest }) => rest);
   });
 
   /**
@@ -76,7 +78,9 @@ export async function registerCircleRoutes(app: FastifyInstance) {
     '/circles/:id',
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
-      const { id: idStr } = req.params as { id: string }; const id = Number(idStr);
+      const { id: idStr } = req.params as { id: string };
+      const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
 
       // Verify user is a member
       const [membership] = await db
@@ -100,10 +104,11 @@ export async function registerCircleRoutes(app: FastifyInstance) {
         .from(schema.circleMembers)
         .where(eq(schema.circleMembers.circleId, id));
 
+      // Do not expose inviteToken in read responses — use GET /circles/:id/invite
+      const { inviteToken: _inviteToken, ...circleData } = circle;
       return {
-        ...circle,
+        ...circleData,
         memberCount: members.length,
-        shareLink: `https://amber.app/join/${circle.inviteToken}`,
       };
     },
   );
@@ -144,7 +149,9 @@ export async function registerCircleRoutes(app: FastifyInstance) {
     '/circles/:id',
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
-      const { id: idStr } = req.params as { id: string }; const id = Number(idStr);
+      const { id: idStr } = req.params as { id: string };
+      const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
 
       const [circle] = await db
         .select()
@@ -163,6 +170,33 @@ export async function registerCircleRoutes(app: FastifyInstance) {
   );
 
   /**
+   * GET /circles/:id/invite
+   * Get the invite token/link for a circle (creator only)
+   */
+  app.get<{ Params: { id: string } }>(
+    '/circles/:id/invite',
+    { preHandler: authenticate },
+    async (req: AuthenticatedRequest, reply) => {
+      const { id: idStr } = req.params as { id: string };
+      const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
+
+      const [circle] = await db
+        .select()
+        .from(schema.circles)
+        .where(and(eq(schema.circles.id, id), eq(schema.circles.createdByUserId, req.userId!)))
+        .limit(1);
+
+      if (!circle) return reply.code(403).send({ error: 'forbidden' });
+
+      return {
+        inviteToken: circle.inviteToken,
+        shareLink: `https://amber.app/join/${circle.inviteToken}`,
+      };
+    },
+  );
+
+  /**
    * GET /circles/:id/members
    * List members of a circle (must be a member yourself)
    */
@@ -170,7 +204,9 @@ export async function registerCircleRoutes(app: FastifyInstance) {
     '/circles/:id/members',
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
-      const { id: idStr } = req.params as { id: string }; const id = Number(idStr);
+      const { id: idStr } = req.params as { id: string };
+      const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
 
       const [membership] = await db
         .select()

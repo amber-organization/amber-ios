@@ -1,0 +1,215 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 20px 40px;
+  gap: 48px;
+}
+
+/* ── Hero ─────────────────────────────────────────────── */
+.hero {
+  max-width: 640px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  border: 1px solid rgba(245, 166, 35, 0.35);
+  color: var(--amber-gold);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(245, 166, 35, 0.08);
+}
+
+.title {
+  font-size: clamp(32px, 6vw, 56px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #f0f0f5 0%, #c8c8d8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--amber-muted);
+  max-width: 480px;
+}
+
+/* ── Dimensions ───────────────────────────────────────── */
+.dimensions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  max-width: 680px;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .dimensions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.dimension {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--amber-surface);
+  border: 1px solid var(--amber-border);
+  transition: border-color 0.2s;
+}
+
+.dimension:hover {
+  border-color: var(--accent);
+}
+
+.dimensionDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.dimensionLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--amber-text);
+}
+
+.dimensionDesc {
+  font-size: 11px;
+  color: var(--amber-muted);
+  margin-top: 2px;
+}
+
+/* ── Auth Card ────────────────────────────────────────── */
+.authCard {
+  width: 100%;
+  max-width: 400px;
+  background: var(--amber-surface);
+  border: 1px solid var(--amber-border);
+  border-radius: 20px;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.authTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--amber-text);
+}
+
+.authSub {
+  font-size: 14px;
+  color: var(--amber-muted);
+  text-align: center;
+  margin-top: -12px;
+}
+
+.authButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.authButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  border: none;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.authButton:hover {
+  opacity: 0.85;
+}
+
+.authButton:active {
+  transform: scale(0.98);
+}
+
+/* Glass style (Google, GitHub, LinkedIn, Microsoft) */
+.auth_glass {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: var(--amber-text);
+}
+
+/* Dark style (Apple) */
+.auth_dark {
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: var(--amber-text);
+}
+
+/* Blue style (Email) */
+.auth_blue {
+  background: var(--amber-blue);
+  color: white;
+}
+
+.terms {
+  font-size: 12px;
+  color: var(--amber-muted);
+  text-align: center;
+  line-height: 1.6;
+}
+
+.link {
+  color: var(--amber-gold);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ── Spinner ──────────────────────────────────────────── */
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--amber-border);
+  border-top-color: var(--amber-gold);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Footer ───────────────────────────────────────────── */
+.footer {
+  display: flex;
+  gap: 24px;
+  font-size: 12px;
+  color: var(--amber-muted);
+  text-align: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}

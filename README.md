@@ -58,52 +58,111 @@ Integrate with Apple Health, Apple Contacts, Location Services, Google Calendar,
 
 ## Tech Stack
 
-- **SwiftUI** — Declarative UI framework
+### iOS
+- **SwiftUI** — Declarative UI
 - **Combine** — Reactive data flow
-- **MVVM** — Clean architecture pattern
+- **MVVM** — Clean architecture
 - **iOS 17.0+** — Minimum deployment target
-- **Zero dependencies** — Pure Apple frameworks (SwiftUI, Combine, Foundation, UIKit)
+
+### Backend (this monorepo)
+- **Fastify** — Node.js API server
+- **Drizzle ORM** — Type-safe Postgres queries
+- **Postgres + pgvector** — Relational + vector search
+- **Claude (Anthropic)** — Memory extraction, AI digests
+- **Stripe** — Subscription billing
+- **Loop Message** — iMessage delivery
+- **GCP Cloud Storage** — Photos, transcripts, exports
+- **Railway** — Deployment
 
 ---
 
-## Project Structure
+## Monorepo Structure
 
 ```
-AmberApp/
-├── AmberApp.swift              # App entry point (3 tabs)
-├── Models/                     # Data models
-├── ViewModels/                 # Business logic
-├── Views/                      # Screen-level views
-│   └── Profile/                # Profile sub-views
-├── Components/                 # Reusable UI components
-├── Extensions/                 # Color + Font extensions
-├── Services/                   # Service layer (future)
-└── Assets.xcassets/            # App icons, images
+amber/
+  AmberApp/               — iOS Swift app (SwiftUI)
+  apps/
+    apple/                — iOS Swift app entry
+    web/                  — Next.js web app (auth, onboarding, chat)
+    agent/                — macOS computer-use agent (Python + Claude vision)
+    imessage-agent/       — Multi-user iMessage agent (Caleb + Sagar as User #1/#2)
+  services/
+    app/                  — Fastify REST API (main backend — auth, DB, webhooks, billing)
+    worker/               — Background job runner (memory extraction, drift detection)
+  packages/
+    shared-types/         — TypeScript domain types
+    memory-engine/        — Memory ingestion + Claude extraction
+    people-graph/         — Hybrid semantic + structured search
+    storage/              — GCP Cloud Storage adapter
+    prompts/              — Shared prompt templates
 ```
+
+---
+
+## API Endpoints
+
+Base URL: deployed via Railway
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/health` | Health check |
+| `GET/POST` | `/persons` | Contact graph |
+| `GET/POST` | `/memories` | Relationship memories |
+| `GET/PATCH` | `/action-items` | Follow-up tasks |
+| `GET/PATCH` | `/approvals` | Approval queue |
+| `GET` | `/billing/status` | Subscription status |
+| `POST` | `/billing/checkout` | Stripe checkout |
+| `POST` | `/billing/portal` | Billing portal |
+| `POST` | `/billing/webhook` | Stripe webhook |
+| `POST` | `/webhooks/loop-message` | Inbound iMessages |
 
 ---
 
 ## Getting Started
 
 ```bash
-git clone https://github.com/sagartiw/amber.git
+# iOS
+git clone https://github.com/amber-organization/amber.git
 cd amber/AmberApp
 open AmberApp.xcodeproj
+# Select iPhone 15 Pro → Cmd+R
+
+# Backend
+pnpm install
+pnpm dev
 ```
 
-Select **iPhone 15 Pro** simulator → `Cmd+R` to build and run.
+See **SETUP.md** for env vars and full configuration.
 
-See **SETUP.md** for detailed configuration and troubleshooting.
+---
+
+## Sub-Ventures
+
+Amber is a platform. These 7 products are built on top of the Amber relationship and health graph:
+
+| Venture | What it is | Status |
+|---------|-----------|--------|
+| **Story** | Verified-real social network — no bots, no resharing, only things you actually lived | Live |
+| **D-NOB** | Private community for children fighting serious illness | Live |
+| **Marrow** | Club and organization recruiting OS — replaces Google Forms and spreadsheets | Live |
+| **FiduciaryOS** | AI financial + life advisor — fiduciary financial guidance and career planning, combined | Live |
+| **ClearOut** | AI inbox that writes replies in your voice and learns who matters to you | Live |
+| **Stillness** | Brain health platform — mental health tracking + cognitive decline detection, built on Amber's graph | Building |
+| **Healthy Tech Index** | Every app and device rated by what it actually does to the people who use it | Building |
+
+**WEB** (relationship CRM) is Amber's core feature, not a separate product. It lives in the contacts + memories layer of the platform.
+
+The moat: each sub-venture deepens Amber's compounding personal dataset. The relationship graph, health metrics, behavioral data, and social patterns cannot be rebuilt from scratch by any competitor starting today.
 
 ---
 
 ## Roadmap
 
-**Now:** iOS client with three tabs (Contacts, Network, Profile), personality tests, daily digests with AI chat, health tracking integration, connected data sources.
+**Now:** iOS app (onboarding, contacts, personality, daily digests), backend API (auth, onboarding, signals, circles, memories, billing), iMessage agent (multi-user — Caleb and Sagar as User #1 and #2), web app (auth, onboarding, chat).
 
-**Next:** Service layer, backend API, onboarding wizard, iMessage AI prompts, real-time sync.
+**Next:** Stripe subscriptions live, real-time memory sync between agent + app, pgvector semantic search, WEB relationship CRM features, Stillness mental health dimension.
 
-**Future:** Web app (Journey — enterprise context tool via Amber ID), practitioner dashboard (Togari), Android app, public API.
+**Future:** Remember cognitive monitoring, Life Plan Assistant, Healthy Tech Index ratings powered by aggregate Amber data, Android, public API.
 
 ---
 

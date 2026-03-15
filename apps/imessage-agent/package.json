@@ -1,0 +1,23 @@
+{
+  "name": "@amber/imessage-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx --env-file=.env src/index.ts",
+    "build": "tsup src/index.ts --format esm --dts --out-dir dist",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "seed": "tsx --env-file=.env scripts/seed.ts"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.44.7",
+    "postgres": "^3.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.2.4",
+    "tsx": "^4.16.2",
+    "typescript": "^5.6.2"
+  }
+}

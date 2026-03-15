@@ -1,0 +1,27 @@
+{
+  "name": "@amber/storage",
+  "version": "0.1.0",
+  "description": "GCP Cloud Storage adapter for Amber",
+  "main": "dist/gcp.js",
+  "types": "dist/gcp.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --out-dir dist",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@google-cloud/storage": "^7.10.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.0.0",
+    "tsup": "^8.2.4",
+    "tsx": "^4.16.0"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  }
+}
