@@ -93,7 +93,7 @@ async function callAmber(
   }
 
   const data = await res.json() as any;
-  return data.content[0].text as string;
+  return (data.content as any[]).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n').trim();
 }
 
 // ── Load user context ────────────────────────────────────────────────────────

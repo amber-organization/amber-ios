@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import styles from './chat.module.css';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.amber.health';
+// API calls go through Next.js proxy routes (/api/chat) which attach the Auth0 token server-side
 
 interface Message {
   role: 'user' | 'amber';
@@ -30,7 +30,7 @@ export default function ChatPage() {
   // Load conversation history
   useEffect(() => {
     if (!user) return;
-    fetch(`${API_URL}/chat/history`, { credentials: 'include' })
+    fetch('/api/chat')
       .then((r) => r.json())
       .then((data: Message[]) => {
         setMessages(Array.isArray(data) ? data : []);
@@ -55,10 +55,9 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, userMsg]);
 
     try {
-      const res = await fetch(`${API_URL}/chat`, {
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify({ message: text, channel: 'web' }),
       });
       const data = await res.json();

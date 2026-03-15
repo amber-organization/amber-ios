@@ -63,7 +63,7 @@ export default function OnboardingPage() {
     setSubmitting(true);
 
     try {
-      const res = await fetch(`${API_URL}/onboarding/checkout`, {
+      const res = await fetch(`${API_URL}/onboarding/web/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -103,7 +103,7 @@ Message: "${userText}"`,
 
   const data = await res.json() as any;
   try {
-    const text = data.content[0].text;
+    const text = (data.content as any[]).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n').trim();
     return JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
   } catch {
     return null;

@@ -72,7 +72,7 @@ async function computeHealthScore(
   if (!res.ok) return { score: 50, reasoning: 'Score computation failed' };
   const data = await res.json() as any;
   try {
-    const text = data.content[0].text;
+    const text = (data.content as any[]).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n').trim();
     const parsed = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
     return {
       score: Math.max(0, Math.min(100, Number(parsed.score) || 50)),

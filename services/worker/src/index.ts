@@ -70,7 +70,11 @@ async function extractPendingMemories() {
 
         if (!res.ok) continue;
         const data = await res.json() as any;
-        const summary = data.content?.[0]?.text?.trim();
+        const summary = (data.content as any[])
+          ?.filter((b: any) => b.type === 'text')
+          .map((b: any) => b.text)
+          .join('\n')
+          .trim();
 
         if (summary) {
           await sql`UPDATE memories SET summary = ${summary}, updated_at = NOW() WHERE id = ${memory.id}`;
@@ -102,9 +106,22 @@ async function detectRelationshipDrift() {
       LIMIT 5
     `;
 
-    if (drifting.length > 0) {
-      console.log(`[worker] ${drifting.length} drifting relationships detected`);
-      // TODO: insert signals for each drifting relationship
+    for (const person of drifting) {
+      const dedupeKey = `drift:${person.user_id}:${person.id}:${new Date().toISOString().substring(0, 7)}`; // once per month per person
+      await sql`
+        INSERT INTO signals (user_id, signal_type, trigger_date, status, payload, dedupe_key, created_at)
+        VALUES (
+          ${person.user_id},
+          'questionnaire_match',
+          NOW(),
+          'pending',
+          ${JSON.stringify({ personId: person.id, personName: person.name, reason: 'relationship_drift', lastMemory: person.last_memory })},
+          ${dedupeKey},
+          NOW()
+        )
+        ON CONFLICT (dedupe_key) DO NOTHING
+      `;
+      console.log(`[worker] Drift signal queued for ${person.name} (user ${person.user_id})`);
     }
   } catch (err: any) {
     console.error('[worker] detectRelationshipDrift error:', err.message);
