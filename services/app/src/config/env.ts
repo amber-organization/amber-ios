@@ -24,6 +24,13 @@ export const config = {
     appSecret: requireEnv('PRIVY_APP_SECRET'),
   },
 
+  // Auth0
+  auth0: {
+    domain: requireEnv('AUTH0_DOMAIN'),
+    clientId: requireEnv('AUTH0_CLIENT_ID'),
+    audience: optionalEnv('AUTH0_AUDIENCE', 'https://api.amber.app')!,
+  },
+
   // Database
   database: {
     url: optionalEnv('DATABASE_URL'),
@@ -60,15 +67,41 @@ export const config = {
     host: optionalEnv('HOST', '0.0.0.0'),
   },
 
+  // Stripe (billing)
+  stripe: {
+    secretKey: optionalEnv('STRIPE_SECRET_KEY'),
+    webhookSecret: optionalEnv('STRIPE_WEBHOOK_SECRET'),
+    prices: {
+      proMonthly: optionalEnv('STRIPE_PRICE_PRO_MONTHLY'),
+      proAnnual: optionalEnv('STRIPE_PRICE_PRO_ANNUAL'),
+      teamMonthly: optionalEnv('STRIPE_PRICE_TEAM_MONTHLY'),
+    },
+  },
+
+  // AI
+  anthropic: {
+    apiKey: optionalEnv('ANTHROPIC_API_KEY'),
+  },
+
+  // Loop Message (iMessage delivery)
+  loopMessage: {
+    apiKey: optionalEnv('LOOP_API_KEY'),
+    webhookSecret: optionalEnv('LOOP_WEBHOOK_SECRET'),
+  },
+
   // Environment
   env: optionalEnv('NODE_ENV', 'development'),
   isDevelopment: optionalEnv('NODE_ENV', 'development') === 'development',
   isProduction: optionalEnv('NODE_ENV', 'development') === 'production',
 };
 
-// In production, Privy must be configured
+// In production, critical env vars must be set
 if (config.isProduction) {
   requireEnv('PRIVY_APP_ID');
   requireEnv('PRIVY_APP_SECRET');
   requireEnv('DATABASE_URL');
+  requireEnv('STRIPE_SECRET_KEY');
+  requireEnv('STRIPE_WEBHOOK_SECRET');
+  requireEnv('AMBER_AGENT_SECRET');
+  requireEnv('LOOP_WEBHOOK_SECRET');
 }

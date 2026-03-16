@@ -21,7 +21,7 @@ const VALID_FIELDS = [
 type FieldType = (typeof VALID_FIELDS)[number];
 
 const PrivacyTierSchema = z.object({
-  tier: z.enum(['local_only', 'selective', 'full_social']),
+  tier: z.enum(['local_only', 'selective_cloud', 'full_social']),
 });
 
 const FieldPermissionSchema = z.object({
@@ -30,7 +30,7 @@ const FieldPermissionSchema = z.object({
 });
 
 const BulkPermissionsSchema = z.object({
-  permissions: z.array(FieldPermissionSchema),
+  permissions: z.array(FieldPermissionSchema).max(VALID_FIELDS.length),
 });
 
 async function auditPermissionChange(
@@ -76,7 +76,7 @@ export async function registerPrivacyRoutes(app: FastifyInstance) {
 
     const isDowngrade =
       (current?.privacyTier === 'full_social' && tier !== 'full_social') ||
-      (current?.privacyTier === 'selective' && tier === 'local_only');
+      (current?.privacyTier === 'selective_cloud' && tier === 'local_only');
 
     await db
       .update(schema.users)
@@ -113,7 +113,7 @@ export async function registerPrivacyRoutes(app: FastifyInstance) {
    * Upsert one or many field-level permissions.
    * Server rejects writes for fields the user hasn't opted into (enforced in other routes).
    */
-  app.put('/privacy/permissions', { preHandler: authenticate }, async (req: AuthenticatedRequest) => {
+  app.put('/privacy/permissions', { preHandler: authenticate }, async (req: AuthenticatedRequest, reply) => {
     const { permissions } = BulkPermissionsSchema.parse(req.body);
 
     // Check current tier — local_only cannot enable any sync
@@ -124,7 +124,7 @@ export async function registerPrivacyRoutes(app: FastifyInstance) {
       .limit(1);
 
     if (user?.privacyTier === 'local_only') {
-      return { error: 'tier_violation', message: 'Upgrade your privacy tier before enabling field sync.' };
+      return reply.code(403).send({ error: 'tier_violation', message: 'Upgrade your privacy tier before enabling field sync.' });
     }
 
     const results = [];
@@ -189,7 +189,7 @@ export async function requireFieldPermission(userId: number, fieldType: FieldTyp
     throw Object.assign(new Error('Field sync blocked: user is in local_only tier'), { statusCode: 403 });
   }
 
-  if (user?.privacyTier === 'selective') {
+  if (user?.privacyTier === 'selective_cloud') {
     const [perm] = await db
       .select()
       .from(schema.userPermissions)
@@ -202,7 +202,7 @@ export async function requireFieldPermission(userId: number, fieldType: FieldTyp
       .limit(1);
     if (!perm?.syncEnabled) {
       throw Object.assign(
-        new Error(`Field sync blocked: '${fieldType}' is not enabled for this user`),
+        new Error('Field sync blocked: field not enabled for this user'),
         { statusCode: 403 },
       );
     }

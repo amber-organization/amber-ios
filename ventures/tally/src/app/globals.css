@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+:root {
+  --tally-bg: #0c0800;
+  --tally-amber: #f59e0b;
+  --tally-amber-light: #fbbf24;
+  --tally-amber-dark: #d97706;
+  --tally-gold: #fde68a;
+  --tally-card-bg: rgba(245, 158, 11, 0.04);
+  --tally-card-border: rgba(245, 158, 11, 0.12);
+  --tally-text-primary: #ffffff;
+  --tally-text-secondary: rgba(255, 255, 255, 0.6);
+  --tally-text-muted: rgba(255, 255, 255, 0.35);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--tally-bg);
+  color: var(--tally-text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
+  50%       { box-shadow: 0 0 40px rgba(245, 158, 11, 0.6); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-6px); }
+}
+
+.fade-up { animation: fadeUp 0.7s ease both; }
+.fade-up-delay-1 { animation: fadeUp 0.7s ease 0.1s both; }
+.fade-up-delay-2 { animation: fadeUp 0.7s ease 0.2s both; }
+.fade-up-delay-3 { animation: fadeUp 0.7s ease 0.3s both; }
+
+.glow-btn { animation: pulseGlow 3s ease-in-out infinite; }
+.float    { animation: float 4s ease-in-out infinite; }
+
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid rgba(245, 158, 11, 0.6);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: rgba(245, 158, 11, 0.25);
+  color: #fff;
+}
+
+input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

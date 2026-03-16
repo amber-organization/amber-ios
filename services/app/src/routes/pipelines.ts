@@ -6,15 +6,15 @@ import { eq, and } from 'drizzle-orm';
 import { authenticate, AuthenticatedRequest } from '../auth/middleware.js';
 
 const NodeSchema = z.object({
-  id: z.string(),
-  type: z.string(),
-  config: z.record(z.any()).default({}),
+  id: z.string().max(100),
+  type: z.string().max(100),
+  config: z.record(z.unknown()).default({}),
 });
 
 const PipelineSchema = z.object({
-  name: z.string(),
-  nodes: z.array(NodeSchema),
-  edges: z.array(z.tuple([z.string(), z.string()])),
+  name: z.string().max(200),
+  nodes: z.array(NodeSchema).max(50),
+  edges: z.array(z.tuple([z.string(), z.string()])).max(200),
   input: z.any().optional(),
 });
 
@@ -23,16 +23,16 @@ export async function registerPipelineRoutes(app: FastifyInstance) {
    * POST /pipelines/run
    * Run a pipeline (for authenticated user)
    */
-  app.post('/pipelines/run', { preHandler: authenticate }, async (req: AuthenticatedRequest, _reply) => {
+  app.post('/pipelines/run', { preHandler: authenticate }, async (req: AuthenticatedRequest, reply) => {
     const body = PipelineSchema.parse(req.body);
     const { input, ...def } = body;
-    
+
     // Save pipeline definition
     const [pipelineDef] = await db
       .insert(schema.pipelineDefs)
       .values({ userId: req.userId!, name: def.name, def: def as any })
       .returning();
-    
+
     // Create run record
     const [run] = await db
       .insert(schema.pipelineRuns)
@@ -58,7 +58,8 @@ export async function registerPipelineRoutes(app: FastifyInstance) {
         .where(eq(schema.pipelineRuns.id, run.id));
       return { runId: String(run.id), status: 'succeeded', result };
     } catch (e: any) {
-      logEntries.push(`error: ${e?.message || String(e)}`);
+      app.log.error({ err: e }, 'Pipeline execution error');
+      logEntries.push('error: pipeline step failed');
       await db
         .update(schema.pipelineRuns)
         .set({
@@ -67,7 +68,7 @@ export async function registerPipelineRoutes(app: FastifyInstance) {
           endedAt: new Date(),
         })
         .where(eq(schema.pipelineRuns.id, run.id));
-      return { runId: String(run.id), status: 'failed', error: e?.message || String(e) };
+      return reply.code(500).send({ runId: String(run.id), status: 'failed', error: 'Pipeline execution failed' });
     }
   });
 
@@ -80,15 +81,20 @@ export async function registerPipelineRoutes(app: FastifyInstance) {
     { preHandler: authenticate },
     async (req: AuthenticatedRequest, reply) => {
       const { id: idStr } = req.params as { id: string }; const id = Number(idStr);
+      if (isNaN(id)) return reply.code(400).send({ error: 'invalid_id' });
       const [run] = await db
         .select()
         .from(schema.pipelineRuns)
         .where(and(eq(schema.pipelineRuns.id, id), eq(schema.pipelineRuns.userId, req.userId!)));
       if (!run) return reply.code(404).send({ error: 'not_found' });
+      // Strip internal error details from log before returning to client
+      const safeLog = (run.log as string[] | null)?.map((entry) =>
+        entry.startsWith('error:') ? 'error: pipeline step failed' : entry
+      ) ?? [];
       return {
         id: String(run.id),
         status: run.status,
-        log: run.log || [],
+        log: safeLog,
         result: run.result,
       };
     },

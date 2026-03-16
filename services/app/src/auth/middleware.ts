@@ -1,16 +1,19 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { verifyPrivyToken } from './privy.js';
+import { verifyAuth0Token } from './auth0.js';
 import { db, schema } from '../db/client.js';
 import { eq } from 'drizzle-orm';
 
 export interface AuthenticatedRequest extends FastifyRequest {
   userId?: number;
   privyUserId?: string;
+  auth0UserId?: string;
 }
 
 /**
- * Authentication middleware: verifies Privy token and loads user from DB
- * Attaches userId and privyUserId to request
+ * Authentication middleware: accepts both Privy (iOS) and Auth0 (web) tokens.
+ * Tries Privy first; falls back to Auth0 if Privy verification fails.
+ * Attaches userId to request regardless of which provider authenticated the user.
  */
 export async function authenticate(
   request: AuthenticatedRequest,
@@ -23,27 +26,92 @@ export async function authenticate(
   }
 
   const token = authHeader.slice(7);
+
+  // Try Privy first (iOS)
   try {
     const privyUser = await verifyPrivyToken(token);
-    
-    // Get or create user in our DB
     let [user] = await db
       .select()
       .from(schema.users)
       .where(eq(schema.users.privyUserId, privyUser.id))
       .limit(1);
-
     if (!user) {
       [user] = await db
         .insert(schema.users)
         .values({ privyUserId: privyUser.id })
         .returning();
     }
-
     request.userId = user.id;
     request.privyUserId = privyUser.id;
+    return;
+  } catch {
+    // Not a Privy token — try Auth0
+  }
+
+  // Try Auth0 (web)
+  try {
+    const decoded = await verifyAuth0Token(token);
+    const auth0UserId = decoded.sub;
+    let [user] = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.auth0UserId, auth0UserId))
+      .limit(1);
+    if (!user) {
+      [user] = await db
+        .insert(schema.users)
+        .values({ auth0UserId, privyUserId: `auth0:${auth0UserId}` })
+        .returning();
+    }
+    request.userId = user.id;
+    request.auth0UserId = auth0UserId;
+    return;
   } catch (error: any) {
-    reply.code(401).send({ error: 'unauthorized', message: error?.message || 'Invalid token' });
+    reply.code(401).send({ error: 'unauthorized', message: 'Invalid token' });
+    return;
+  }
+}
+
+/**
+ * Auth0 authentication middleware: verifies Auth0 JWT and loads user from DB
+ * Attaches userId and auth0UserId to request
+ */
+export async function authenticateAuth0(
+  request: AuthenticatedRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const authHeader = request.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    reply.code(401).send({ error: 'unauthorized', message: 'Missing or invalid authorization header' });
+    return;
+  }
+
+  const token = authHeader.slice(7);
+  try {
+    const decoded = await verifyAuth0Token(token);
+    const auth0UserId = decoded.sub;
+
+    // Get or create user in our DB
+    let [user] = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.auth0UserId, auth0UserId))
+      .limit(1);
+
+    if (!user) {
+      [user] = await db
+        .insert(schema.users)
+        .values({
+          auth0UserId,
+          privyUserId: `auth0:${auth0UserId}`,
+        })
+        .returning();
+    }
+
+    request.userId = user.id;
+    request.auth0UserId = auth0UserId;
+  } catch {
+    reply.code(401).send({ error: 'unauthorized', message: 'Invalid token' });
     return;
   }
 }
@@ -61,6 +129,8 @@ export async function optionalAuth(
   }
 
   const token = authHeader.slice(7);
+
+  // Try Privy first (iOS)
   try {
     const privyUser = await verifyPrivyToken(token);
     const [user] = await db
@@ -68,14 +138,28 @@ export async function optionalAuth(
       .from(schema.users)
       .where(eq(schema.users.privyUserId, privyUser.id))
       .limit(1);
-
     if (user) {
       request.userId = user.id;
       request.privyUserId = privyUser.id;
+    }
+    return;
+  } catch {
+    // Not a Privy token — try Auth0
+  }
+
+  // Try Auth0 (web)
+  try {
+    const decoded = await verifyAuth0Token(token);
+    const [user] = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.auth0UserId, decoded.sub))
+      .limit(1);
+    if (user) {
+      request.userId = user.id;
+      request.auth0UserId = decoded.sub;
     }
   } catch {
     // Ignore errors for optional auth
   }
 }
-
-

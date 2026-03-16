@@ -1,0 +1,27 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --amber-bg: #0a0a0f;
+  --amber-surface: #13131a;
+  --amber-border: rgba(255,255,255,0.08);
+  --amber-gold: #f5a623;
+  --amber-blue: #4f8ef7;
+  --amber-text: #f0f0f5;
+  --amber-muted: #888;
+}
+
+html, body {
+  height: 100%;
+  background: var(--amber-bg);
+  color: var(--amber-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: inherit; }
+input { font-family: inherit; }

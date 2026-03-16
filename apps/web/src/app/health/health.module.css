@@ -1,0 +1,269 @@
+.page {
+  flex: 1;
+  padding: 32px 36px;
+  overflow-y: auto;
+  max-width: 940px;
+}
+
+.spinnerPage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--amber-text);
+  letter-spacing: -0.4px;
+  margin-bottom: 4px;
+}
+
+.sub {
+  font-size: 14px;
+  color: var(--amber-muted);
+  margin-bottom: 28px;
+}
+
+.sectionTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--amber-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 14px;
+  margin-top: 32px;
+}
+
+/* ── Overall card ─────────────────────────────── */
+.overallCard {
+  background: rgba(245,166,35,0.06);
+  border: 1px solid rgba(245,166,35,0.18);
+  border-radius: 20px;
+  padding: 24px 28px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  margin-bottom: 8px;
+}
+
+.overallGaugeWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.overallCenter {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.overallNum {
+  font-size: 30px;
+  font-weight: 800;
+  color: #f5a623;
+  line-height: 1;
+}
+
+.overallLabel {
+  font-size: 11px;
+  color: var(--amber-muted);
+  margin-top: 3px;
+}
+
+.overallRight {
+  flex: 1;
+}
+
+.overallInsight {
+  font-size: 14px;
+  color: var(--amber-text);
+  line-height: 1.65;
+  margin-bottom: 14px;
+}
+
+.connectLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--amber-gold);
+  text-decoration: none;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+
+.connectLink:hover { opacity: 1; }
+
+/* ── Dimensions grid ──────────────────────────── */
+.dimensionsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.dimCard {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--amber-border);
+  border-radius: 16px;
+  padding: 18px 18px 16px;
+}
+
+.dimTop {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.dimLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--amber-text);
+  margin-bottom: 2px;
+}
+
+.dimScore {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* ── Mini bar chart ───────────────────────────── */
+.miniBar {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 40px;
+}
+
+.miniBarSegment {
+  width: 10px;
+  border-radius: 2px 2px 0 0;
+  min-height: 4px;
+  transition: height 0.3s;
+}
+
+.dimBar {
+  height: 5px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.dimFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.dimInsight {
+  font-size: 12px;
+  color: var(--amber-muted);
+  line-height: 1.55;
+}
+
+/* ── Integration grid ─────────────────────────── */
+.integGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.integCard {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--amber-border);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.integTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.integIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.integName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--amber-text);
+}
+
+.integDim {
+  font-size: 11px;
+  text-transform: capitalize;
+  margin-top: 1px;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.connected { background: #27ae60; }
+.disconnected { background: rgba(255,255,255,0.15); }
+
+.integStatus {
+  display: flex;
+}
+
+.connectedBadge {
+  font-size: 12px;
+  color: #27ae60;
+  background: rgba(39,174,96,0.1);
+  border: 1px solid rgba(39,174,96,0.2);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.connectBtn {
+  font-size: 12px;
+  color: var(--amber-gold);
+  background: rgba(245,166,35,0.1);
+  border: 1px solid rgba(245,166,35,0.2);
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.connectBtn:hover { background: rgba(245,166,35,0.18); }
+
+/* ── Spinner ──────────────────────────────────── */
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--amber-border);
+  border-top-color: var(--amber-gold);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 700px) {
+  .page { padding: 20px 16px; }
+  .overallCard { flex-direction: column; text-align: center; }
+}
