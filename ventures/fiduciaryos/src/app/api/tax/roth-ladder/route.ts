@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(data, { status: res.status });
   } catch {
     const { computeRothConversionLadder } = await import("@/lib/tax-engine-v2");
-    const result = computeRothConversionLadder(body);
+    const result = computeRothConversionLadder(body as any);
     return NextResponse.json({ ...result, offline: true });
   }
 }

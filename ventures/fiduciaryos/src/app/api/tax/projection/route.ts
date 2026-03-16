@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   } catch {
     // Python backend offline — compute via TypeScript tax engine
     const { computeFullTaxProjection } = await import("@/lib/tax-engine-v2");
-    const result = computeFullTaxProjection(body);
+    const result = computeFullTaxProjection(body as any);
     return NextResponse.json({ ...result, offline: true });
   }
 }

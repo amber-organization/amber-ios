@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(data, { status: res.status });
   } catch {
     const { computeQuarterlyEstimates } = await import("@/lib/tax-engine-v2");
-    const result = computeQuarterlyEstimates(body);
+    const result = computeQuarterlyEstimates(body as any);
     return NextResponse.json({ ...result, offline: true });
   }
 }

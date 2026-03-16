@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(data, { status: res.status });
   } catch {
     const { computeEquityCompTax } = await import("@/lib/tax-engine-v2");
-    const result = computeEquityCompTax(body);
+    const result = computeEquityCompTax(body as any);
     return NextResponse.json({ ...result, offline: true });
   }
 }
