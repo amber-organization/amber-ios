@@ -15,504 +15,245 @@ struct AmberIDView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Identity Card with Live Tracking
-                    VStack(spacing: 16) {
-                        // Avatar with ring
-                        ZStack {
-                            Circle()
-                                .stroke(Color.amberBlue, lineWidth: 3)
-                                .frame(width: 106, height: 106)
+            ZStack {
+                Color.amberBackground.ignoresSafeArea()
 
-                            ContactAvatar(
-                                name: viewModel.user.name,
-                                imageURL: viewModel.user.avatarURL,
-                                size: 100
-                            )
-                        }
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // MARK: - Top Section: Avatar + Name
+                        VStack(spacing: 14) {
+                            // Avatar with gradient ring
+                            ZStack {
+                                Circle()
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [.amberBlue, .amberGold],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 3
+                                    )
+                                    .frame(width: 106, height: 106)
 
-                        Text(viewModel.user.name)
-                            .font(.title2)
-                            .fontWeight(.bold)
-
-                        Text("@\(viewModel.username)")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-
-                        // Live Tracking Insights
-                        VStack(spacing: 12) {
-                            Text("Today's Activity")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-
-                            // Move Line
-                            HStack(spacing: 12) {
-                                Image(systemName: "flame.fill")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.red)
-                                    .frame(width: 24)
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack {
-                                        Text("Move")
-                                            .font(.subheadline)
-                                            .fontWeight(.medium)
-                                        Spacer()
-                                        Text("\(Int(viewModel.moveProgress * 100))%")
-                                            .font(.subheadline)
-                                            .foregroundColor(.secondary)
-                                    }
-
-                                    GeometryReader { geometry in
-                                        ZStack(alignment: .leading) {
-                                            RoundedRectangle(cornerRadius: 2)
-                                                .fill(Color.secondary.opacity(0.2))
-                                                .frame(height: 4)
-
-                                            RoundedRectangle(cornerRadius: 2)
-                                                .fill(Color.red.gradient)
-                                                .frame(width: geometry.size.width * CGFloat(viewModel.moveProgress), height: 4)
-                                        }
-                                    }
-                                    .frame(height: 4)
-                                }
+                                ContactAvatar(
+                                    name: viewModel.user.name,
+                                    imageURL: viewModel.user.avatarURL,
+                                    size: 100
+                                )
                             }
 
-                            // Exercise Line
-                            HStack(spacing: 12) {
-                                Image(systemName: "figure.run")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.green)
-                                    .frame(width: 24)
+                            Text(viewModel.user.name)
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.white)
 
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack {
-                                        Text("Exercise")
-                                            .font(.subheadline)
-                                            .fontWeight(.medium)
-                                        Spacer()
-                                        Text("\(Int(viewModel.exerciseProgress * 100))%")
-                                            .font(.subheadline)
-                                            .foregroundColor(.secondary)
-                                    }
+                            Text("@\(viewModel.username)")
+                                .font(.system(size: 15))
+                                .foregroundColor(.white.opacity(0.5))
 
-                                    GeometryReader { geometry in
-                                        ZStack(alignment: .leading) {
-                                            RoundedRectangle(cornerRadius: 2)
-                                                .fill(Color.secondary.opacity(0.2))
-                                                .frame(height: 4)
-
-                                            RoundedRectangle(cornerRadius: 2)
-                                                .fill(Color.green.gradient)
-                                                .frame(width: geometry.size.width * CGFloat(viewModel.exerciseProgress), height: 4)
-                                        }
-                                    }
-                                    .frame(height: 4)
+                            if !viewModel.currentCity.isEmpty {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "location.fill")
+                                        .font(.system(size: 11))
+                                    Text(viewModel.currentCity)
+                                        .font(.system(size: 13))
                                 }
-                            }
-
-                            // Stand Line
-                            HStack(spacing: 12) {
-                                Image(systemName: "figure.stand")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.blue)
-                                    .frame(width: 24)
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack {
-                                        Text("Stand")
-                                            .font(.subheadline)
-                                            .fontWeight(.medium)
-                                        Spacer()
-                                        Text("\(Int(viewModel.standProgress * 100))%")
-                                            .font(.subheadline)
-                                            .foregroundColor(.secondary)
-                                    }
-
-                                    GeometryReader { geometry in
-                                        ZStack(alignment: .leading) {
-                                            RoundedRectangle(cornerRadius: 2)
-                                                .fill(Color.secondary.opacity(0.2))
-                                                .frame(height: 4)
-
-                                            RoundedRectangle(cornerRadius: 2)
-                                                .fill(Color.blue.gradient)
-                                                .frame(width: geometry.size.width * CGFloat(viewModel.standProgress), height: 4)
-                                        }
-                                    }
-                                    .frame(height: 4)
-                                }
-                            }
-
-                            // Sleep Line
-                            HStack(spacing: 12) {
-                                Image(systemName: "moon.fill")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.indigo)
-                                    .frame(width: 24)
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack {
-                                        Text("Sleep")
-                                            .font(.subheadline)
-                                            .fontWeight(.medium)
-                                        Spacer()
-                                        Text("\(viewModel.sleepHours, specifier: "%.1f")h")
-                                            .font(.subheadline)
-                                            .foregroundColor(.secondary)
-                                    }
-
-                                    GeometryReader { geometry in
-                                        ZStack(alignment: .leading) {
-                                            RoundedRectangle(cornerRadius: 2)
-                                                .fill(Color.secondary.opacity(0.2))
-                                                .frame(height: 4)
-
-                                            RoundedRectangle(cornerRadius: 2)
-                                                .fill(Color.indigo.gradient)
-                                                .frame(width: geometry.size.width * CGFloat(min(viewModel.sleepHours / 8.0, 1.0)), height: 4)
-                                        }
-                                    }
-                                    .frame(height: 4)
-                                }
-                            }
-
-                            // Screen Time Line
-                            HStack(spacing: 12) {
-                                Image(systemName: "iphone")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.orange)
-                                    .frame(width: 24)
-
-                                VStack(alignment: .leading, spacing: 4) {
-                                    HStack {
-                                        Text("Screen Time")
-                                            .font(.subheadline)
-                                            .fontWeight(.medium)
-                                        Spacer()
-                                        Text("\(viewModel.screenTimeHours, specifier: "%.1f")h")
-                                            .font(.subheadline)
-                                            .foregroundColor(.secondary)
-                                    }
-
-                                    GeometryReader { geometry in
-                                        ZStack(alignment: .leading) {
-                                            RoundedRectangle(cornerRadius: 2)
-                                                .fill(Color.secondary.opacity(0.2))
-                                                .frame(height: 4)
-
-                                            RoundedRectangle(cornerRadius: 2)
-                                                .fill(viewModel.screenTimeHours > 4 ? Color.orange.gradient : Color.green.gradient)
-                                                .frame(width: geometry.size.width * CGFloat(min(viewModel.screenTimeHours / 8.0, 1.0)), height: 4)
-                                        }
-                                    }
-                                    .frame(height: 4)
-                                }
+                                .foregroundColor(.white.opacity(0.4))
                             }
                         }
                         .padding(.top, 8)
-                    }
-                    .padding(20)
-                    .frame(maxWidth: .infinity)
-                    .background(.regularMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .padding(.horizontal)
 
-                    // Personal Details
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Personal Details")
-                            .font(.headline)
-                            .padding(.horizontal)
-
-                        VStack(spacing: 0) {
-                            if let birthday = viewModel.user.birthday {
-                                PersonalityRow(
-                                    label: "Birthday",
-                                    value: birthday.formatted(date: .abbreviated, time: .omitted)
-                                )
-                                Divider().padding(.leading, 16)
-                            }
-
-                            if let sun = viewModel.user.zodiacSun {
-                                PersonalityRow(label: "Sun Sign", value: "\(sun.symbol) \(sun.rawValue)")
-                                Divider().padding(.leading, 16)
-                            }
-
-                            if let moon = viewModel.user.zodiacMoon {
-                                PersonalityRow(label: "Moon Sign", value: "\(moon.symbol) \(moon.rawValue)")
-                                Divider().padding(.leading, 16)
-                            }
-
-                            if let rising = viewModel.user.zodiacRising {
-                                PersonalityRow(label: "Rising Sign", value: "\(rising.symbol) \(rising.rawValue)")
-                                Divider().padding(.leading, 16)
-                            }
-
-                            if let mbti = viewModel.user.myersBriggs {
-                                PersonalityRow(label: "Myers-Briggs", value: mbti.rawValue)
-                                Divider().padding(.leading, 16)
-                            }
-
-                            if let enneagram = viewModel.user.enneagram {
-                                PersonalityRow(label: "Enneagram", value: enneagram.rawValue)
-                                Divider().padding(.leading, 16)
-                            }
-
-                            if let phase = viewModel.user.currentCyclePhase {
-                                PersonalityRow(label: "Cycle Phase", value: "\(phase.emoji) \(phase.rawValue)")
-                                Divider().padding(.leading, 16)
-                            }
-
-                            if let startDate = viewModel.user.cycleStartDate {
-                                PersonalityRow(
-                                    label: "Cycle Day",
-                                    value: "Day \(Calendar.current.dateComponents([.day], from: startDate, to: Date()).day ?? 0 + 1)"
-                                )
-                            }
-                        }
-                        .background(.regularMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .padding(.horizontal)
-                    }
-
-                    // Daily Digest - Vertical Story Modals
-                    VStack(alignment: .leading, spacing: 16) {
-                        HStack {
-                            Text("Daily Digest")
-                                .font(.headline)
-                            Spacer()
-                            Button {
-                                // Show all stories
-                            } label: {
-                                Text("More")
-                                    .font(.subheadline)
-                                    .foregroundColor(.amberBlue)
-                                Image(systemName: "arrow.right")
-                                    .font(.caption)
-                                    .foregroundColor(.amberBlue)
-                            }
-                        }
-                        .padding(.horizontal)
-
+                        // MARK: - Quick Stats
                         ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 16) {
-                                ForEach(viewModel.dailyDigests) { digest in
-                                    StoryCard(digest: digest)
+                            HStack(spacing: 10) {
+                                QuickStatPill(icon: "person.2.fill", text: "42 Contacts")
+                                QuickStatPill(icon: "calendar", text: "6 Events")
+                                if let sun = viewModel.user.zodiacSun {
+                                    QuickStatPill(icon: nil, text: "\(sun.symbol) \(sun.rawValue)")
+                                }
+                                if !viewModel.privacyTier.isEmpty {
+                                    QuickStatPill(icon: "shield.fill", text: viewModel.privacyTier.replacingOccurrences(of: "_", with: " ").capitalized)
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                        }
+
+                        // MARK: - Health Tracking
+                        GlassCard(cornerRadius: 16, borderOpacity: 0.06) {
+                            VStack(spacing: 14) {
+                                Text("Today's Activity")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(.white.opacity(0.4))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                                PremiumHealthBar(icon: "flame.fill", label: "Move", progress: viewModel.moveProgress, color: .red, valueText: "\(Int(viewModel.moveProgress * 100))%")
+                                PremiumHealthBar(icon: "figure.run", label: "Exercise", progress: viewModel.exerciseProgress, color: .green, valueText: "\(Int(viewModel.exerciseProgress * 100))%")
+                                PremiumHealthBar(icon: "figure.stand", label: "Stand", progress: viewModel.standProgress, color: .blue, valueText: "\(Int(viewModel.standProgress * 100))%")
+                                PremiumHealthBar(icon: "moon.fill", label: "Sleep", progress: min(viewModel.sleepHours / 8.0, 1.0), color: .indigo, valueText: "\(viewModel.sleepHours, specifier: "%.1f")h")
+                                PremiumHealthBar(icon: "iphone", label: "Screen Time", progress: min(viewModel.screenTimeHours / 8.0, 1.0), color: viewModel.screenTimeHours > 4 ? .orange : .green, valueText: "\(viewModel.screenTimeHours, specifier: "%.1f")h")
+                            }
+                            .padding(16)
+                        }
+                        .padding(.horizontal, 16)
+
+                        // MARK: - Personal Details
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Personal Details")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(.white.opacity(0.5))
+                                .padding(.horizontal, 20)
+
+                            GlassCard(cornerRadius: 16, borderOpacity: 0.06) {
+                                VStack(spacing: 0) {
+                                    if let birthday = viewModel.user.birthday {
+                                        GlassDetailRow(
+                                            label: "Birthday",
+                                            value: birthday.formatted(date: .abbreviated, time: .omitted)
+                                        )
+                                        Divider().overlay(Color.white.opacity(0.06)).padding(.leading, 16)
+                                    }
+
+                                    if let sun = viewModel.user.zodiacSun {
+                                        GlassDetailRow(label: "Sun Sign", value: "\(sun.symbol) \(sun.rawValue)")
+                                        Divider().overlay(Color.white.opacity(0.06)).padding(.leading, 16)
+                                    }
+
+                                    if let moon = viewModel.user.zodiacMoon {
+                                        GlassDetailRow(label: "Moon Sign", value: "\(moon.symbol) \(moon.rawValue)")
+                                        Divider().overlay(Color.white.opacity(0.06)).padding(.leading, 16)
+                                    }
+
+                                    if let rising = viewModel.user.zodiacRising {
+                                        GlassDetailRow(label: "Rising Sign", value: "\(rising.symbol) \(rising.rawValue)")
+                                        Divider().overlay(Color.white.opacity(0.06)).padding(.leading, 16)
+                                    }
+
+                                    if let mbti = viewModel.user.myersBriggs {
+                                        GlassDetailRow(label: "Myers-Briggs", value: mbti.rawValue)
+                                        Divider().overlay(Color.white.opacity(0.06)).padding(.leading, 16)
+                                    }
+
+                                    if let enneagram = viewModel.user.enneagram {
+                                        GlassDetailRow(label: "Enneagram", value: enneagram.rawValue)
+                                        Divider().overlay(Color.white.opacity(0.06)).padding(.leading, 16)
+                                    }
+
+                                    if let phase = viewModel.user.currentCyclePhase {
+                                        GlassDetailRow(label: "Cycle Phase", value: "\(phase.emoji) \(phase.rawValue)")
+                                        Divider().overlay(Color.white.opacity(0.06)).padding(.leading, 16)
+                                    }
+
+                                    if let startDate = viewModel.user.cycleStartDate {
+                                        GlassDetailRow(
+                                            label: "Cycle Day",
+                                            value: "Day \(Calendar.current.dateComponents([.day], from: startDate, to: Date()).day ?? 0 + 1)"
+                                        )
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                        }
+
+                        // MARK: - Daily Digest
+                        VStack(alignment: .leading, spacing: 16) {
+                            HStack {
+                                Text("Daily Digest")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(.white.opacity(0.5))
+                                Spacer()
+                                Button {} label: {
+                                    HStack(spacing: 4) {
+                                        Text("More")
+                                            .font(.system(size: 14))
+                                        Image(systemName: "arrow.right")
+                                            .font(.system(size: 12))
+                                    }
+                                    .foregroundColor(.amberBlue)
                                 }
                             }
                             .padding(.horizontal, 20)
-                        }
-                    }
 
-                    // Personality Tests Grid
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Enhance Your Profile")
-                            .font(.headline)
-                            .padding(.horizontal)
-
-                        VStack(spacing: 12) {
-                            // Daily Test - Full Width Card
-                            DailyTestCard()
-                                .padding(.horizontal)
-
-                            // Other Tests Grid
-                            LazyVGrid(columns: [
-                                GridItem(.flexible(), spacing: 12),
-                                GridItem(.flexible(), spacing: 12)
-                            ], spacing: 12) {
-                                PersonalityTestCard(
-                                    title: "Big Five",
-                                    icon: "chart.bar.fill",
-                                    color: .blue,
-                                    isCompleted: false
-                                )
-
-                                PersonalityTestCard(
-                                    title: "Myers-Briggs",
-                                    icon: "person.fill",
-                                    color: .purple,
-                                    isCompleted: viewModel.user.myersBriggs != nil
-                                )
-
-                                PersonalityTestCard(
-                                    title: "Enneagram",
-                                    icon: "circle.grid.3x3.fill",
-                                    color: .green,
-                                    isCompleted: viewModel.user.enneagram != nil
-                                )
-
-                                PersonalityTestCard(
-                                    title: "Love Language",
-                                    icon: "heart.fill",
-                                    color: .pink,
-                                    isCompleted: false
-                                )
-
-                                PersonalityTestCard(
-                                    title: "Attachment Style",
-                                    icon: "link.circle.fill",
-                                    color: .orange,
-                                    isCompleted: false
-                                )
-
-                                PersonalityTestCard(
-                                    title: "Zodiac Signs",
-                                    icon: "sparkles",
-                                    color: .indigo,
-                                    isCompleted: viewModel.user.zodiacSun != nil && viewModel.user.zodiacMoon != nil && viewModel.user.zodiacRising != nil
-                                )
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 16) {
+                                    ForEach(viewModel.dailyDigests) { digest in
+                                        StoryCard(digest: digest)
+                                    }
+                                }
+                                .padding(.horizontal, 20)
                             }
-                            .padding(.horizontal)
                         }
-                    }
 
-                    // Data Sources Section (moved to bottom)
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Connected Apps & Permissions")
-                            .font(.headline)
-                            .padding(.horizontal)
+                        // MARK: - Personality Tests
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Enhance Your Profile")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(.white.opacity(0.5))
+                                .padding(.horizontal, 20)
 
-                        VStack(spacing: 12) {
-                            // Apple Integrations
-                            DataSourceRow(
-                                icon: "apple.logo",
-                                title: "Apple Contacts",
-                                subtitle: "Access to your contacts",
-                                isConnected: $viewModel.appleContactsConnected,
-                                color: .gray
-                            )
+                            VStack(spacing: 12) {
+                                DailyTestCard()
+                                    .padding(.horizontal, 16)
 
-                            DataSourceRow(
-                                icon: "heart.fill",
-                                title: "Apple Health",
-                                subtitle: "Activity, sleep, and health data",
-                                isConnected: $viewModel.appleHealthConnected,
-                                color: .pink
-                            )
-
-                            DataSourceRow(
-                                icon: "location.fill",
-                                title: "Location Services",
-                                subtitle: "Background location tracking",
-                                isConnected: $viewModel.locationServicesConnected,
-                                color: .blue
-                            )
-
-                            DataSourceRow(
-                                icon: "app.connected.to.app.below.fill",
-                                title: "Activity from Other Apps",
-                                subtitle: "Cross-app activity tracking",
-                                isConnected: $viewModel.activityTrackingConnected,
-                                color: .purple
-                            )
-
-                            // Google Integrations
-                            DataSourceRow(
-                                icon: "calendar",
-                                title: "Google Calendar",
-                                subtitle: "Events and scheduling",
-                                isConnected: $viewModel.googleCalendarConnected,
-                                color: .red
-                            )
-
-                            DataSourceRow(
-                                icon: "envelope.fill",
-                                title: "Gmail",
-                                subtitle: "Email communications",
-                                isConnected: $viewModel.gmailConnected,
-                                color: .red
-                            )
-
-                            // Meta Integrations
-                            DataSourceRow(
-                                icon: "camera.fill",
-                                title: "Instagram",
-                                subtitle: "Posts, stories, and messages",
-                                isConnected: $viewModel.instagramConnected,
-                                color: .pink
-                            )
-
-                            DataSourceRow(
-                                icon: "person.3.fill",
-                                title: "Facebook",
-                                subtitle: "Social graph and activity",
-                                isConnected: $viewModel.facebookConnected,
-                                color: .blue
-                            )
-
-                            // Other Social
-                            DataSourceRow(
-                                icon: "music.note",
-                                title: "TikTok",
-                                subtitle: "Videos and interactions",
-                                isConnected: $viewModel.tiktokConnected,
-                                color: .black
-                            )
-
-                            DataSourceRow(
-                                icon: "briefcase.fill",
-                                title: "LinkedIn",
-                                subtitle: "Professional network",
-                                isConnected: $viewModel.linkedInConnected,
-                                color: .blue
-                            )
-
-                            DataSourceRow(
-                                icon: "bird.fill",
-                                title: "X (Twitter)",
-                                subtitle: "Tweets and social activity",
-                                isConnected: $viewModel.xConnected,
-                                color: .black
-                            )
-
-                            DataSourceRow(
-                                icon: "newspaper.fill",
-                                title: "Substack",
-                                subtitle: "Reading and subscriptions",
-                                isConnected: $viewModel.substackConnected,
-                                color: .orange
-                            )
-
-                            // AI Assistants
-                            DataSourceRow(
-                                icon: "sparkles",
-                                title: "Claude",
-                                subtitle: "AI conversations",
-                                isConnected: $viewModel.claudeConnected,
-                                color: .orange
-                            )
-
-                            DataSourceRow(
-                                icon: "bubble.left.and.bubble.right.fill",
-                                title: "ChatGPT",
-                                subtitle: "AI interactions",
-                                isConnected: $viewModel.chatGPTConnected,
-                                color: .green
-                            )
+                                LazyVGrid(columns: [
+                                    GridItem(.flexible(), spacing: 12),
+                                    GridItem(.flexible(), spacing: 12)
+                                ], spacing: 12) {
+                                    PersonalityTestCard(title: "Big Five", icon: "chart.bar.fill", color: .blue, isCompleted: false)
+                                    PersonalityTestCard(title: "Myers-Briggs", icon: "person.fill", color: .purple, isCompleted: viewModel.user.myersBriggs != nil)
+                                    PersonalityTestCard(title: "Enneagram", icon: "circle.grid.3x3.fill", color: .green, isCompleted: viewModel.user.enneagram != nil)
+                                    PersonalityTestCard(title: "Love Language", icon: "heart.fill", color: .pink, isCompleted: false)
+                                    PersonalityTestCard(title: "Attachment Style", icon: "link.circle.fill", color: .orange, isCompleted: false)
+                                    PersonalityTestCard(title: "Zodiac Signs", icon: "sparkles", color: .indigo, isCompleted: viewModel.user.zodiacSun != nil && viewModel.user.zodiacMoon != nil && viewModel.user.zodiacRising != nil)
+                                }
+                                .padding(.horizontal, 16)
+                            }
                         }
-                        .padding(.horizontal)
-                    }
 
-                    // Sign Out
-                    Button(action: {
-                        UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
-                        authViewModel.logout()
-                    }) {
-                        Text("Sign Out")
-                            .font(.body)
-                            .foregroundColor(.red)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
+                        // MARK: - Connected Apps
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Connected Apps & Permissions")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(.white.opacity(0.5))
+                                .padding(.horizontal, 20)
+
+                            VStack(spacing: 10) {
+                                DataSourceRow(icon: "apple.logo", title: "Apple Contacts", subtitle: "Access to your contacts", isConnected: $viewModel.appleContactsConnected, color: .gray)
+                                DataSourceRow(icon: "heart.fill", title: "Apple Health", subtitle: "Activity, sleep, and health data", isConnected: $viewModel.appleHealthConnected, color: .pink)
+                                DataSourceRow(icon: "location.fill", title: "Location Services", subtitle: "Background location tracking", isConnected: $viewModel.locationServicesConnected, color: .blue)
+                                DataSourceRow(icon: "app.connected.to.app.below.fill", title: "Activity from Other Apps", subtitle: "Cross-app activity tracking", isConnected: $viewModel.activityTrackingConnected, color: .purple)
+                                DataSourceRow(icon: "calendar", title: "Google Calendar", subtitle: "Events and scheduling", isConnected: $viewModel.googleCalendarConnected, color: .red)
+                                DataSourceRow(icon: "envelope.fill", title: "Gmail", subtitle: "Email communications", isConnected: $viewModel.gmailConnected, color: .red)
+                                DataSourceRow(icon: "camera.fill", title: "Instagram", subtitle: "Posts, stories, and messages", isConnected: $viewModel.instagramConnected, color: .pink)
+                                DataSourceRow(icon: "person.3.fill", title: "Facebook", subtitle: "Social graph and activity", isConnected: $viewModel.facebookConnected, color: .blue)
+                                DataSourceRow(icon: "music.note", title: "TikTok", subtitle: "Videos and interactions", isConnected: $viewModel.tiktokConnected, color: .black)
+                                DataSourceRow(icon: "briefcase.fill", title: "LinkedIn", subtitle: "Professional network", isConnected: $viewModel.linkedInConnected, color: .blue)
+                                DataSourceRow(icon: "bird.fill", title: "X (Twitter)", subtitle: "Tweets and social activity", isConnected: $viewModel.xConnected, color: .black)
+                                DataSourceRow(icon: "newspaper.fill", title: "Substack", subtitle: "Reading and subscriptions", isConnected: $viewModel.substackConnected, color: .orange)
+                                DataSourceRow(icon: "sparkles", title: "Claude", subtitle: "AI conversations", isConnected: $viewModel.claudeConnected, color: .orange)
+                                DataSourceRow(icon: "bubble.left.and.bubble.right.fill", title: "ChatGPT", subtitle: "AI interactions", isConnected: $viewModel.chatGPTConnected, color: .green)
+                            }
+                            .padding(.horizontal, 16)
+                        }
+
+                        // MARK: - Sign Out
+                        Button(action: {
+                            UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
+                            authViewModel.logout()
+                        }) {
+                            Text("Sign Out")
+                                .font(.system(size: 16))
+                                .foregroundColor(.red.opacity(0.8))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                        }
+                        .padding(.horizontal, 16)
                     }
-                    .padding(.horizontal)
+                    .padding(.vertical)
+                    .padding(.bottom, 120)
                 }
-                .padding(.vertical)
-                .padding(.bottom, 140) // Space for tab bar
             }
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -541,5 +282,98 @@ struct AmberIDView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Quick Stat Pill
+
+private struct QuickStatPill: View {
+    let icon: String?
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 5) {
+            if let icon {
+                Image(systemName: icon)
+                    .font(.system(size: 11))
+            }
+            Text(text)
+                .font(.system(size: 12, weight: .medium))
+        }
+        .foregroundColor(.white.opacity(0.7))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(.ultraThinMaterial)
+        .clipShape(Capsule())
+        .overlay(
+            Capsule()
+                .strokeBorder(.white.opacity(0.08), lineWidth: 0.5)
+        )
+    }
+}
+
+// MARK: - Premium Health Bar
+
+private struct PremiumHealthBar: View {
+    let icon: String
+    let label: String
+    let progress: Double
+    let color: Color
+    let valueText: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundColor(color)
+                .frame(width: 22)
+
+            VStack(alignment: .leading, spacing: 5) {
+                HStack {
+                    Text(label)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white)
+                    Spacer()
+                    Text(valueText)
+                        .font(.system(size: 13))
+                        .foregroundColor(.white.opacity(0.5))
+                }
+
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(Color.white.opacity(0.08))
+                            .frame(height: 3)
+
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(color.gradient)
+                            .frame(width: geometry.size.width * CGFloat(progress), height: 3)
+                            .shadow(color: color.opacity(0.6), radius: 4, x: 0, y: 0)
+                    }
+                }
+                .frame(height: 3)
+            }
+        }
+    }
+}
+
+// MARK: - Glass Detail Row
+
+private struct GlassDetailRow: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 15))
+                .foregroundColor(.white.opacity(0.6))
+            Spacer()
+            Text(value)
+                .font(.system(size: 15))
+                .foregroundColor(.white)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 }

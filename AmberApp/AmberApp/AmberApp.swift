@@ -46,36 +46,36 @@ struct AmberApp: App {
 
 struct ContentView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @State private var selectedTab = 1 // Start on Network (center)
-    @State private var searchText = ""
-    @State private var networkInputText = ""
-    @FocusState private var isNetworkInputFocused: Bool
+    @State private var selectedTab = 0
 
     var body: some View {
         ZStack {
+            Color.amberBackground.ignoresSafeArea()
+
             // Content views
             Group {
-                if selectedTab == 0 {
-                    ConnectionsView(searchText: $searchText)
-                } else if selectedTab == 1 {
-                    DiscoverView()
-                } else {
+                switch selectedTab {
+                case 0:
+                    ContactsTabView()
+                case 1:
+                    MessagesTabView()
+                case 2:
+                    SearchAITabView()
+                case 3:
                     AmberIDView()
+                default:
+                    ContactsTabView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // Network input bar - only shows when on Network tab
+            // Floating tab bar
             VStack {
                 Spacer()
-                if selectedTab == 1 {
-                    NetworkInputBar(inputText: $networkInputText, isInputFocused: $isNetworkInputFocused)
-                        .padding(.bottom, 12)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-                CustomTabBar(selectedTab: $selectedTab, searchText: $searchText)
+                FloatingTabBar(selectedTab: $selectedTab)
             }
             .ignoresSafeArea(.keyboard)
         }
+        .preferredColorScheme(.dark)
     }
 }
