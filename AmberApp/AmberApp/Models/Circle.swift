@@ -4,7 +4,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class Circle {
+final class AmberCircle {
     var remoteId: Int?
     var name: String
     var visibility: String          // "private" | "members" | "public"

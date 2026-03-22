@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct AmberApp: App {
@@ -40,6 +41,7 @@ struct AmberApp: App {
             .onAppear {
                 authViewModel.checkSession()
             }
+            .modelContainer(for: [AmberCircle.self, Contact.self, Signal.self, UserProfile.self])
         }
     }
 }
