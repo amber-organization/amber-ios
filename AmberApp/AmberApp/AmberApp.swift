@@ -54,7 +54,6 @@ struct SplashView: View {
 
             VStack(spacing: 20) {
                 ZStack {
-                    // Glow
                     Circle()
                         .fill(Color.amberWarm.opacity(0.2))
                         .frame(width: 100, height: 100)
@@ -79,42 +78,44 @@ struct SplashView: View {
     }
 }
 
-// MARK: - Content View (3-tab layout)
+// MARK: - Content View (5-tab Instagram-style layout)
 
 struct ContentView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @State private var selectedTab = 1 // Start on Amber AI (center)
-    @State private var showProfile = false
+    @State private var selectedTab = 2 // Start on Amber AI (center)
     @State private var networkInputText = ""
     @FocusState private var isNetworkInputFocused: Bool
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottom) {
             Color.amberBackground.ignoresSafeArea()
 
-            // Content
+            // Content views
             Group {
                 switch selectedTab {
                 case 0:
-                    MessagingView()
+                    ContactsView()
                 case 1:
-                    AmberAIView()
+                    MessagingView()
                 case 2:
-                    WrapFeedView()
+                    AmberAIView()
+                case 3:
+                    DailySnapshotView()
+                case 4:
+                    ProfileView()
                 default:
                     AmberAIView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // Bottom bar stack
-            VStack {
-                Spacer()
-
+            // Bottom stack: input bar + tab bar
+            VStack(spacing: 0) {
                 // Network input bar — only on Amber AI tab
-                if selectedTab == 1 {
+                if selectedTab == 2 {
                     NetworkInputBar(inputText: $networkInputText, isInputFocused: $isNetworkInputFocused)
-                        .padding(.bottom, 8)
+                        .padding(.horizontal, 4)
+                        .padding(.bottom, 6)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
 
@@ -123,65 +124,6 @@ struct ContentView: View {
             .ignoresSafeArea(.keyboard)
         }
         .preferredColorScheme(.dark)
-        .sheet(isPresented: $showProfile) {
-            NavigationStack {
-                AmberIDView()
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button("Done") { showProfile = false }
-                                .foregroundColor(.amberWarm)
-                                .fontWeight(.semibold)
-                        }
-                    }
-            }
-            .presentationDragIndicator(.visible)
-        }
-        .environment(\.showProfile, $showProfile)
-    }
-}
-
-// MARK: - Profile Environment Key
-
-private struct ShowProfileKey: EnvironmentKey {
-    static let defaultValue: Binding<Bool> = .constant(false)
-}
-
-extension EnvironmentValues {
-    var showProfile: Binding<Bool> {
-        get { self[ShowProfileKey.self] }
-        set { self[ShowProfileKey.self] = newValue }
-    }
-}
-
-// MARK: - Profile Avatar Button (reusable toolbar component)
-
-struct ProfileAvatarButton: View {
-    @Environment(\.showProfile) var showProfile
-
-    var body: some View {
-        Button {
-            showProfile.wrappedValue = true
-        } label: {
-            ZStack {
-                Circle()
-                    .fill(Color.amberCard)
-                    .frame(width: 34, height: 34)
-                    .overlay(
-                        Circle()
-                            .strokeBorder(
-                                LinearGradient(
-                                    colors: [.amberWarm, .amberGold],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1.5
-                            )
-                    )
-
-                Text("ST")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(.amberText)
-            }
-        }
+        .environmentObject(authViewModel)
     }
 }
