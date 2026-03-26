@@ -16,12 +16,7 @@ struct AmberApp: App {
         WindowGroup {
             Group {
                 if authViewModel.isLoading {
-                    // Splash / session check
-                    ZStack {
-                        Color.amberBackground.ignoresSafeArea()
-                        ProgressView()
-                            .tint(.amberBlue)
-                    }
+                    SplashView()
                 } else if !authViewModel.isAuthenticated {
                     LoginView()
                         .environmentObject(authViewModel)
@@ -48,45 +43,145 @@ struct AmberApp: App {
     }
 }
 
+// MARK: - Splash
+
+struct SplashView: View {
+    @State private var glowPulse = false
+
+    var body: some View {
+        ZStack {
+            Color.amberBackground.ignoresSafeArea()
+
+            VStack(spacing: 20) {
+                ZStack {
+                    // Glow
+                    Circle()
+                        .fill(Color.amberWarm.opacity(0.2))
+                        .frame(width: 100, height: 100)
+                        .blur(radius: 30)
+                        .scaleEffect(glowPulse ? 1.3 : 0.8)
+
+                    Image("AmberLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 72, height: 72)
+                }
+
+                ProgressView()
+                    .tint(.amberWarm)
+            }
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
+                glowPulse = true
+            }
+        }
+    }
+}
+
+// MARK: - Content View (3-tab layout)
+
 struct ContentView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @State private var selectedTab = 2 // Start on Network (center)
-    @State private var searchText = ""
+    @State private var selectedTab = 1 // Start on Amber AI (center)
+    @State private var showProfile = false
     @State private var networkInputText = ""
     @FocusState private var isNetworkInputFocused: Bool
 
     var body: some View {
         ZStack {
-            // Content views
+            Color.amberBackground.ignoresSafeArea()
+
+            // Content
             Group {
                 switch selectedTab {
                 case 0:
-                    MessagesView()
+                    MessagingView()
                 case 1:
-                    ConnectionsView(searchText: $searchText)
+                    AmberAIView()
                 case 2:
-                    DiscoverView()
-                case 3:
-                    AmberIDView()
-                case 4:
-                    FeedView()
+                    WrapFeedView()
                 default:
-                    DiscoverView()
+                    AmberAIView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // Network input bar - only shows when on Network tab
+            // Bottom bar stack
             VStack {
                 Spacer()
-                if selectedTab == 2 {
+
+                // Network input bar — only on Amber AI tab
+                if selectedTab == 1 {
                     NetworkInputBar(inputText: $networkInputText, isInputFocused: $isNetworkInputFocused)
-                        .padding(.bottom, 12)
+                        .padding(.bottom, 8)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
-                CustomTabBar(selectedTab: $selectedTab, searchText: $searchText)
+
+                CustomTabBar(selectedTab: $selectedTab)
             }
             .ignoresSafeArea(.keyboard)
+        }
+        .preferredColorScheme(.dark)
+        .sheet(isPresented: $showProfile) {
+            NavigationStack {
+                AmberIDView()
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("Done") { showProfile = false }
+                                .foregroundColor(.amberWarm)
+                                .fontWeight(.semibold)
+                        }
+                    }
+            }
+            .presentationDragIndicator(.visible)
+        }
+        .environment(\.showProfile, $showProfile)
+    }
+}
+
+// MARK: - Profile Environment Key
+
+private struct ShowProfileKey: EnvironmentKey {
+    static let defaultValue: Binding<Bool> = .constant(false)
+}
+
+extension EnvironmentValues {
+    var showProfile: Binding<Bool> {
+        get { self[ShowProfileKey.self] }
+        set { self[ShowProfileKey.self] = newValue }
+    }
+}
+
+// MARK: - Profile Avatar Button (reusable toolbar component)
+
+struct ProfileAvatarButton: View {
+    @Environment(\.showProfile) var showProfile
+
+    var body: some View {
+        Button {
+            showProfile.wrappedValue = true
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(Color.amberCard)
+                    .frame(width: 34, height: 34)
+                    .overlay(
+                        Circle()
+                            .strokeBorder(
+                                LinearGradient(
+                                    colors: [.amberWarm, .amberGold],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1.5
+                            )
+                    )
+
+                Text("ST")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.amberText)
+            }
         }
     }
 }

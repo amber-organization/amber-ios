@@ -12,59 +12,62 @@ struct LoginView: View {
     @State private var showEmailFlow = false
     @State private var email = ""
     @State private var otpCode = ""
+    @State private var logoGlow = false
 
     var body: some View {
         ZStack {
+            // Background
             Color.amberBackground
                 .ignoresSafeArea()
+
+            // Subtle warm ambient glow behind logo
+            Circle()
+                .fill(Color.amberWarm.opacity(0.08))
+                .frame(width: 300, height: 300)
+                .blur(radius: 80)
+                .offset(y: -180)
+                .scaleEffect(logoGlow ? 1.1 : 0.9)
 
             VStack(spacing: 0) {
                 Spacer()
 
-                // Logo and app name
-                VStack(spacing: 16) {
-                    Image(systemName: "hexagon.fill")
-                        .font(.system(size: 64))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.amberBlue, .amberGold],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                // Logo
+                VStack(spacing: 20) {
+                    ZStack {
+                        // Glow ring
+                        Circle()
+                            .fill(Color.amberWarm.opacity(0.12))
+                            .frame(width: 120, height: 120)
+                            .blur(radius: 20)
+                            .scaleEffect(logoGlow ? 1.2 : 0.85)
 
-                    Text("Amber")
-                        .font(.system(size: 40, weight: .bold))
-                        .foregroundColor(.white)
+                        Image("AmberLogo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 80, height: 80)
+                    }
 
-                    Text("Your Health Network")
-                        .font(.amberBody)
-                        .foregroundColor(.gray)
+                    VStack(spacing: 8) {
+                        Text("amber")
+                            .font(.system(size: 36, weight: .bold, design: .default))
+                            .foregroundColor(.amberText)
+                            .tracking(-0.5)
+
+                        Text("your relationship memory")
+                            .font(.amberSubheadline)
+                            .foregroundColor(.amberSecondaryText)
+                    }
                 }
 
                 Spacer()
 
-                // Sign in section
-                VStack(spacing: 20) {
-                    if authViewModel.isAwaitingOTP {
-                        Text("Enter Code")
-                            .font(.amberHeadline)
-                            .foregroundColor(.white)
-                    } else if showEmailFlow {
-                        Text("Sign in with Email")
-                            .font(.amberHeadline)
-                            .foregroundColor(.white)
-                    } else {
-                        Text("Sign in to Amber")
-                            .font(.amberHeadline)
-                            .foregroundColor(.white)
-                    }
-
-                    // Error message
+                // Auth section
+                VStack(spacing: 24) {
+                    // Error
                     if let error = authViewModel.error, !error.isEmpty {
                         Text(error)
                             .font(.amberCaption)
-                            .foregroundColor(.red)
+                            .foregroundColor(.amberError)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 24)
                     }
@@ -77,155 +80,154 @@ struct LoginView: View {
                         loginButtonsView
                     }
 
-                    // Loading indicator
                     if authViewModel.isLoading {
                         ProgressView()
-                            .tint(.amberBlue)
-                            .padding(.top, 8)
+                            .tint(.amberWarm)
+                            .padding(.top, 4)
                     }
                 }
 
                 Spacer()
 
-                // Dev bypass (DEBUG only)
+                // Dev bypass
                 #if DEBUG
                 if !authViewModel.isAwaitingOTP && !showEmailFlow {
                     Button(action: { authViewModel.devBypassLogin() }) {
                         Text("Skip Login (Dev Mode)")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.amberBlue.opacity(0.6))
+                            .font(.amberCaption)
+                            .foregroundColor(.amberSecondaryText.opacity(0.5))
                     }
                     .padding(.bottom, 8)
                 }
                 #endif
 
                 // Footer
-                Text("By continuing, you agree to Amber's Terms of Service and Privacy Policy.")
+                Text("By continuing, you agree to Amber's\nTerms of Service and Privacy Policy.")
                     .font(.amberCaption)
-                    .foregroundColor(.gray)
+                    .foregroundColor(.amberTertiaryText)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
                     .padding(.bottom, 32)
             }
         }
         .preferredColorScheme(.dark)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 3).repeatForever(autoreverses: true)) {
+                logoGlow = true
+            }
+        }
     }
 
-    // MARK: - Login Buttons (matches original main layout)
+    // MARK: - Login Buttons
 
     private var loginButtonsView: some View {
         VStack(spacing: 12) {
-            // Continue with Google
-            Button(action: { authViewModel.loginWithGoogle() }) {
-                HStack(spacing: 12) {
-                    Image(systemName: "g.circle.fill")
-                        .font(.system(size: 20))
-                    Text("Continue with Google")
-                        .font(.system(size: 17, weight: .semibold))
+            // Continue with Apple (primary)
+            Button(action: { authViewModel.loginWithApple() }) {
+                HStack(spacing: 10) {
+                    Image(systemName: "apple.logo")
+                        .font(.system(size: 18, weight: .medium))
+                    Text("Continue with Apple")
+                        .font(.system(size: 16, weight: .semibold))
                 }
-                .foregroundColor(.white)
+                .foregroundColor(.amberBackground)
                 .frame(maxWidth: .infinity)
-                .frame(height: 54)
-                .background(
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(.ultraThinMaterial)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                        )
-                )
+                .frame(height: 52)
+                .background(Color.amberText, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
             .disabled(authViewModel.isLoading)
 
-            // Continue with Apple
-            Button(action: { authViewModel.loginWithApple() }) {
-                HStack(spacing: 12) {
-                    Image(systemName: "apple.logo")
-                        .font(.system(size: 20))
-                    Text("Continue with Apple")
-                        .font(.system(size: 17, weight: .semibold))
+            // Continue with Google
+            Button(action: { authViewModel.loginWithGoogle() }) {
+                HStack(spacing: 10) {
+                    Image(systemName: "g.circle.fill")
+                        .font(.system(size: 18))
+                    Text("Continue with Google")
+                        .font(.system(size: 16, weight: .semibold))
                 }
-                .foregroundColor(.white)
+                .foregroundColor(.amberText)
                 .frame(maxWidth: .infinity)
-                .frame(height: 54)
+                .frame(height: 52)
                 .background(
-                    RoundedRectangle(cornerRadius: 14)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .fill(.ultraThinMaterial)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(Color.white.opacity(0.1), lineWidth: 0.5)
                         )
                 )
             }
             .disabled(authViewModel.isLoading)
 
             // Divider
-            HStack {
-                Rectangle().fill(Color.white.opacity(0.15)).frame(height: 1)
-                Text("or").font(.amberCaption).foregroundColor(.gray)
-                Rectangle().fill(Color.white.opacity(0.15)).frame(height: 1)
+            HStack(spacing: 12) {
+                Rectangle().fill(Color.amberTertiaryText.opacity(0.3)).frame(height: 0.5)
+                Text("or")
+                    .font(.amberCaption)
+                    .foregroundColor(.amberTertiaryText)
+                Rectangle().fill(Color.amberTertiaryText.opacity(0.3)).frame(height: 0.5)
             }
 
             // Continue with Email
-            Button(action: { withAnimation(.spring(response: 0.3)) { showEmailFlow = true } }) {
-                HStack(spacing: 12) {
+            Button(action: {
+                withAnimation(.spring(response: 0.3)) { showEmailFlow = true }
+            }) {
+                HStack(spacing: 10) {
                     Image(systemName: "envelope.fill")
-                        .font(.system(size: 20))
+                        .font(.system(size: 16))
                     Text("Continue with Email")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.system(size: 16, weight: .semibold))
                 }
-                .foregroundColor(.white)
+                .foregroundColor(.amberText)
                 .frame(maxWidth: .infinity)
-                .frame(height: 54)
+                .frame(height: 52)
                 .background(
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(Color.amberBlue)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                        )
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color.amberWarm)
                 )
             }
             .disabled(authViewModel.isLoading)
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, 28)
     }
 
     // MARK: - Email Entry
 
     private var emailEntryView: some View {
-        VStack(spacing: 12) {
-            TextField("Email address", text: $email)
+        VStack(spacing: 14) {
+            Text("Sign in with Email")
+                .font(.amberHeadline)
+                .foregroundColor(.amberText)
+
+            TextField("", text: $email, prompt: Text("Email address").foregroundColor(.amberTertiaryText))
                 .textContentType(.emailAddress)
                 .keyboardType(.emailAddress)
                 .autocapitalization(.none)
                 .disableAutocorrection(true)
+                .font(.amberBody)
+                .foregroundColor(.amberText)
                 .padding(.horizontal, 16)
-                .frame(height: 54)
+                .frame(height: 52)
                 .background(
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(.ultraThinMaterial)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color.amberCard)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5)
                         )
                 )
-                .foregroundColor(.white)
 
             Button(action: { authViewModel.sendEmailCode(to: email) }) {
                 Text("Send Code")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.amberText)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14)
-                            .fill(Color.amberBlue)
-                    )
+                    .frame(height: 52)
+                    .background(Color.amberWarm, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
             .disabled(email.isEmpty || authViewModel.isLoading)
 
-            Button("Back to sign in options") {
+            Button("Back") {
                 withAnimation(.spring(response: 0.3)) {
                     showEmailFlow = false
                     email = ""
@@ -233,48 +235,49 @@ struct LoginView: View {
                 }
             }
             .font(.amberCaption)
-            .foregroundColor(.amberBlue)
+            .foregroundColor(.amberSecondaryText)
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, 28)
     }
 
     // MARK: - OTP Entry
 
     private var otpEntryView: some View {
-        VStack(spacing: 12) {
-            if let email = authViewModel.pendingEmail {
-                Text("Code sent to \(email)")
+        VStack(spacing: 14) {
+            Text("Enter Code")
+                .font(.amberHeadline)
+                .foregroundColor(.amberText)
+
+            if let pendingEmail = authViewModel.pendingEmail {
+                Text("Sent to \(pendingEmail)")
                     .font(.amberCaption)
-                    .foregroundColor(.gray)
+                    .foregroundColor(.amberSecondaryText)
             }
 
-            TextField("Enter 6-digit code", text: $otpCode)
+            TextField("", text: $otpCode, prompt: Text("6-digit code").foregroundColor(.amberTertiaryText))
                 .textContentType(.oneTimeCode)
                 .keyboardType(.numberPad)
                 .multilineTextAlignment(.center)
-                .font(.system(size: 24, weight: .semibold, design: .monospaced))
+                .font(.amberMonoLarge)
+                .foregroundColor(.amberText)
                 .padding(.horizontal, 16)
-                .frame(height: 54)
+                .frame(height: 56)
                 .background(
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(.ultraThinMaterial)
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color.amberCard)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(Color.amberWarm.opacity(0.2), lineWidth: 0.5)
                         )
                 )
-                .foregroundColor(.white)
 
             Button(action: { authViewModel.verifyEmailCode(otpCode) }) {
                 Text("Verify")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(.white)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.amberText)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 54)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14)
-                            .fill(Color.amberBlue)
-                    )
+                    .frame(height: 52)
+                    .background(Color.amberWarm, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
             .disabled(otpCode.count < 6 || authViewModel.isLoading)
 
@@ -286,9 +289,9 @@ struct LoginView: View {
                 showEmailFlow = false
             }
             .font(.amberCaption)
-            .foregroundColor(.amberBlue)
+            .foregroundColor(.amberSecondaryText)
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, 28)
     }
 }
 
