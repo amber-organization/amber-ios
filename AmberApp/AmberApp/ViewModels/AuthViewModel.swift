@@ -24,12 +24,17 @@ class AuthViewModel: ObservableObject {
     private var authStateTask: Task<Void, Never>?
 
     init() {
+        #if DEBUG && targetEnvironment(simulator)
+        // Skip Privy SDK entirely in simulator — devBypassLogin() handles auth
+        privy = nil
+        #else
         let config = PrivyConfig(
             appId: AppConfig.privyAppId,
             appClientId: AppConfig.privyAppClientId
         )
         privy = PrivySdk.initialize(config: config)
         observeAuthState()
+        #endif
     }
 
     deinit {
