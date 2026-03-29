@@ -46,51 +46,33 @@ struct AmberApp: App {
 // MARK: - Splash
 
 struct SplashView: View {
-    @State private var glowPulse = false
-
     var body: some View {
         ZStack {
-            Color.amberBackground.ignoresSafeArea()
+            Color.black.ignoresSafeArea()
 
             VStack(spacing: 20) {
-                ZStack {
-                    Circle()
-                        .fill(Color.amberWarm.opacity(0.2))
-                        .frame(width: 100, height: 100)
-                        .blur(radius: 30)
-                        .scaleEffect(glowPulse ? 1.3 : 0.8)
-
-                    Image("AmberLogo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 72, height: 72)
-                }
+                Image("AmberLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 72, height: 72)
 
                 ProgressView()
                     .tint(.amberWarm)
             }
         }
-        .onAppear {
-            withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: true)) {
-                glowPulse = true
-            }
-        }
     }
 }
 
-// MARK: - Content View (5-tab Instagram-style layout)
+// MARK: - Content View (5-tab layout)
 
 struct ContentView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @State private var selectedTab = 2 // Start on Amber AI (center)
-    @State private var networkInputText = ""
-    @FocusState private var isNetworkInputFocused: Bool
+    @State private var selectedTab = 2
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color.amberBackground.ignoresSafeArea()
+            Color.black.ignoresSafeArea()
 
-            // Content views
             Group {
                 switch selectedTab {
                 case 0:
@@ -109,19 +91,8 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // Bottom stack: input bar + tab bar
-            VStack(spacing: 0) {
-                // Network input bar — only on Amber AI tab
-                if selectedTab == 2 {
-                    NetworkInputBar(inputText: $networkInputText, isInputFocused: $isNetworkInputFocused)
-                        .padding(.horizontal, 4)
-                        .padding(.bottom, 6)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-
-                CustomTabBar(selectedTab: $selectedTab)
-            }
-            .ignoresSafeArea(.keyboard)
+            CustomTabBar(selectedTab: $selectedTab)
+                .ignoresSafeArea(.keyboard)
         }
         .preferredColorScheme(.dark)
         .environmentObject(authViewModel)

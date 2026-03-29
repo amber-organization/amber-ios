@@ -2,7 +2,7 @@
 //  ProfileAvatarButton.swift
 //  Amber
 //
-//  Reusable toolbar avatar that navigates to Profile tab.
+//  Minimal toolbar avatar.
 //
 
 import SwiftUI
@@ -11,22 +11,16 @@ struct ProfileAvatarButton: View {
     var body: some View {
         ZStack {
             Circle()
-                .fill(Color.amberCard)
-                .frame(width: 32, height: 32)
+                .fill(Color.amberSurface)
+                .frame(width: 30, height: 30)
                 .overlay(
                     Circle()
-                        .strokeBorder(
-                            LinearGradient(
-                                colors: [.amberWarm.opacity(0.8), .amberGold.opacity(0.6)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1.5
-                        )
+                        .strokeBorder(Color.glassStroke, lineWidth: 0.5)
                 )
 
             Text("S")
-                .font(.system(size: 13, weight: .bold))
+                .font(.amberCaption)
+                .fontWeight(.semibold)
                 .foregroundColor(.amberText)
         }
     }

@@ -2,7 +2,7 @@
 //  ContactAvatar.swift
 //  Amber
 //
-//  Created on 2026-01-17.
+//  Uniform material-filled avatar.
 //
 
 import SwiftUI
@@ -38,20 +38,13 @@ struct InitialsAvatar: View {
         return "\(first)\(last)".uppercased()
     }
 
-    private var backgroundColor: Color {
-        let colors: [Color] = [.amberBlue, .healthSpiritual, .healthEmotional,
-                               .healthPhysical, .healthIntellectual, .healthFinancial]
-        let index = abs(name.hashValue) % colors.count
-        return colors[index]
-    }
-
     var body: some View {
         ZStack {
             Circle()
-                .fill(backgroundColor)
+                .fill(Color.amberSurface)
             Text(initials)
-                .font(.system(size: size * 0.4, weight: .semibold))
-                .foregroundColor(.white)
+                .font(.system(size: size * 0.38, weight: .semibold))
+                .foregroundColor(.amberText)
         }
         .frame(width: size, height: size)
     }

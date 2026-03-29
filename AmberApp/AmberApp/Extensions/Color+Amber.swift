@@ -2,46 +2,48 @@
 //  Color+Amber.swift
 //  Amber
 //
-//  Premium color system inspired by amber resin, gold, and warmth.
+//  Liquid Glass color system — neutral darks, iOS-aligned semantics, amber brand accent.
 //
 
 import SwiftUI
 
 extension Color {
-    // MARK: - Brand Primary (from logo: warm amber egg)
-    static let amberPrimary = Color(hex: "C45A1C")       // Deep amber-orange
-    static let amberWarm = Color(hex: "E8832A")           // Molten amber
-    static let amberGold = Color(hex: "D4A542")           // Rich gold
-    static let amberHoney = Color(hex: "E6B84F")          // Light honey
-    static let amberEmber = Color(hex: "9E3A12")          // Deep ember
+    // MARK: - Brand (2 values only)
+    static let amberPrimary = Color(hex: "C45A1C")
+    static let amberWarm = Color(hex: "E8832A")
+    static let amberAccent = Color(hex: "E8832A")
 
-    // MARK: - Brand Gradient
-    static let amberGradientStart = Color(hex: "E8832A")  // Top: warm orange
-    static let amberGradientMid = Color(hex: "C45A1C")    // Mid: deep amber
-    static let amberGradientEnd = Color(hex: "9E3A12")    // Bottom: ember
+    // MARK: - Deprecated brand aliases (will be removed in Phase 2 view rewrites)
+    static let amberGold = Color(hex: "E8832A")
+    static let amberHoney = Color(hex: "E8832A")
+    static let amberEmber = Color(hex: "C45A1C")
 
-    // MARK: - Backgrounds (warm-tinted darks)
-    static let amberBackground = Color(hex: "080706")     // Near-black with warm undertone
-    static let amberSurface = Color(hex: "141210")         // Elevated surface
-    static let amberCard = Color(hex: "1A1714")            // Card background
-    static let amberCardBackground = Color(hex: "1A1714")  // Alias for amberCard
-    static let amberCardElevated = Color(hex: "231F1A")    // Elevated card
+    // MARK: - Backgrounds (pure neutral, OLED-optimized)
+    static let amberBackground = Color(hex: "000000")
+    static let amberSurface = Color(hex: "1C1C1E")
+    static let amberCard = Color(hex: "2C2C2E")
+    static let amberCardBackground = Color(hex: "2C2C2E")
+    static let amberCardElevated = Color(hex: "3A3A3C")
 
-    // MARK: - Text
-    static let amberText = Color(hex: "F5F0EB")           // Warm white
-    static let amberSecondaryText = Color(hex: "8A8078")   // Warm gray
-    static let amberTertiaryText = Color(hex: "5A5248")    // Muted
+    // MARK: - Text (cool whites, iOS-aligned)
+    static let amberText = Color(hex: "F5F5F7")
+    static let amberSecondaryText = Color(hex: "8E8E93")
+    static let amberTertiaryText = Color(hex: "48484A")
 
-    // MARK: - Accents (keeping blue for interactive, adding warm accents)
-    static let amberBlue = Color(hex: "4A90D9")            // Interactive elements
-    static let amberAccent = Color(hex: "E8832A")          // Primary warm accent
+    // MARK: - Interactive
+    static let amberBlue = Color(hex: "0A84FF")
 
-    // MARK: - Semantic
-    static let amberSuccess = Color(hex: "4CAF6E")
-    static let amberWarning = Color(hex: "E6B84F")
-    static let amberError = Color(hex: "D94A4A")
+    // MARK: - Semantic (iOS system colors)
+    static let amberSuccess = Color(hex: "30D158")
+    static let amberWarning = Color(hex: "FFD60A")
+    static let amberError = Color(hex: "FF453A")
 
-    // MARK: - Health Dimensions (warmer palette)
+    // MARK: - Glass
+    static let glassStroke = Color.white.opacity(0.12)
+    static let glassFill = Color.white.opacity(0.05)
+    static let glassHighlight = Color.white.opacity(0.25)
+
+    // MARK: - Health Dimensions
     static let healthSpiritual = Color(hex: "A668C4")
     static let healthEmotional = Color(hex: "E06B5E")
     static let healthPhysical = Color(hex: "4CAF6E")
@@ -50,22 +52,27 @@ extension Color {
     static let healthFinancial = Color(hex: "3DB8A0")
 
     // MARK: - Circle Types
-    static let circleOneToOne = Color(hex: "E8832A")       // Warm, intimate
-    static let circleOneToMany = Color(hex: "5BA3D9")      // Broadcast blue
-    static let circleManyToMany = Color(hex: "A668C4")     // Community purple
+    static let circleOneToOne = Color(hex: "E8832A")
+    static let circleOneToMany = Color(hex: "5BA3D9")
+    static let circleManyToMany = Color(hex: "A668C4")
 
-    // MARK: - Gradients
+    // MARK: - Brand Gradient (simplified two-stop)
+    static let amberGradientStart = Color(hex: "E8832A")
+    static let amberGradientMid = Color(hex: "C45A1C")
+    static let amberGradientEnd = Color(hex: "C45A1C")
+
     static var amberBrandGradient: LinearGradient {
         LinearGradient(
-            colors: [amberGradientStart, amberGradientMid, amberGradientEnd],
+            colors: [amberWarm, amberPrimary],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
     }
 
+    // MARK: - Deprecated gradients (aliased, removed in Phase 2)
     static var amberSubtleGradient: LinearGradient {
         LinearGradient(
-            colors: [amberWarm.opacity(0.15), amberGold.opacity(0.05)],
+            colors: [amberWarm.opacity(0.08), amberPrimary.opacity(0.03)],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
@@ -73,10 +80,10 @@ extension Color {
 
     static var amberGlowGradient: RadialGradient {
         RadialGradient(
-            colors: [amberWarm.opacity(0.3), amberWarm.opacity(0)],
+            colors: [amberWarm.opacity(0.15), amberWarm.opacity(0)],
             center: .center,
             startRadius: 0,
-            endRadius: 120
+            endRadius: 80
         )
     }
 
