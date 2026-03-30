@@ -91,6 +91,17 @@ struct DailySnapshotView: View {
         return formatter.string(from: Date())
     }
 
+    private var currentEventIndex: Int {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case ..<10: return 0
+        case 10..<12: return 1
+        case 12..<14: return 2
+        case 14..<16: return 3
+        default: return 4
+        }
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -98,6 +109,9 @@ struct DailySnapshotView: View {
             VStack(alignment: .leading, spacing: 24) {
                 // Header
                 headerSection
+
+                // Timeline
+                timelineSection
 
                 // Health metrics
                 healthSection
@@ -107,9 +121,6 @@ struct DailySnapshotView: View {
 
                 // Location
                 locationSection
-
-                // Timeline
-                timelineSection
             }
             .padding(.top, 16)
             .padding(.bottom, 120)
@@ -288,32 +299,40 @@ struct DailySnapshotView: View {
 
     private var timelineSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Timeline")
-                .amberSectionHeader()
-                .padding(.horizontal, 20)
+            HStack {
+                Text("Today's Schedule")
+                    .amberSectionHeader()
+                Spacer()
+                Text("\(schedule.count) events")
+                    .font(.amberCaption2)
+                    .foregroundStyle(Color.amberTertiaryText)
+            }
+            .padding(.horizontal, 20)
 
             VStack(spacing: 0) {
                 ForEach(Array(schedule.enumerated()), id: \.element.id) { index, event in
-                    timelineRow(event: event, isLast: index == schedule.count - 1)
+                    timelineRow(event: event, isLast: index == schedule.count - 1, isNow: index == currentEventIndex)
                 }
             }
+            .liquidGlassCard()
             .padding(.horizontal, 16)
         }
     }
 
-    private func timelineRow(event: ScheduleEvent, isLast: Bool) -> some View {
+    private func timelineRow(event: ScheduleEvent, isLast: Bool, isNow: Bool = false) -> some View {
         HStack(alignment: .top, spacing: 12) {
             // Time
             Text(event.time)
                 .font(.amberCaption)
-                .foregroundStyle(Color.amberSecondaryText)
+                .foregroundStyle(isNow ? Color.amberWarm : Color.amberSecondaryText)
+                .fontWeight(isNow ? .semibold : .regular)
                 .frame(width: 64, alignment: .trailing)
 
             // Dot + vertical line
             VStack(spacing: 0) {
                 Circle()
-                    .fill(event.dotColor)
-                    .frame(width: 8, height: 8)
+                    .fill(isNow ? Color.amberWarm : event.dotColor)
+                    .frame(width: isNow ? 10 : 8, height: isNow ? 10 : 8)
 
                 // Continuous vertical line — never ends, suggesting infinite timeline
                 Rectangle()
@@ -325,6 +344,7 @@ struct DailySnapshotView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(event.title)
                     .font(.amberBody)
+                    .fontWeight(isNow ? .semibold : .regular)
                     .foregroundStyle(Color.amberText)
 
                 if let subtitle = event.subtitle {
@@ -332,10 +352,25 @@ struct DailySnapshotView: View {
                         .font(.amberCaption)
                         .foregroundStyle(Color.amberSecondaryText)
                 }
+
+                if isNow {
+                    Text("NOW")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(Color.amberWarm)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.amberWarm.opacity(0.15), in: Capsule())
+                }
             }
 
             Spacer()
         }
+        .padding(isNow ? 8 : 0)
+        .background(
+            isNow
+                ? RoundedRectangle(cornerRadius: 8).fill(Color.amberWarm.opacity(0.06))
+                : RoundedRectangle(cornerRadius: 8).fill(Color.clear)
+        )
         .padding(.bottom, isLast ? 0 : 16)
     }
 }

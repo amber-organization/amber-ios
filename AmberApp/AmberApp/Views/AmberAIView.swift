@@ -79,17 +79,14 @@ struct AmberAIView: View {
                         networkVisualization
                             .frame(height: UIScreen.main.bounds.height * 0.45)
 
-                        // Suggestion chips
-                        suggestionChips
-                            .padding(.top, 12)
-
-                        Spacer(minLength: 160)
+                        Spacer(minLength: 220)
                     }
                 }
 
                 // Input bar pinned to bottom
-                VStack {
+                VStack(spacing: 12) {
                     Spacer()
+                    suggestionChips
                     NetworkInputBar(inputText: $queryText, isInputFocused: $isInputFocused)
                         .padding(.horizontal, 20)
                         .padding(.bottom, 80)
