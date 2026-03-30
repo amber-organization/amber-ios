@@ -11,13 +11,19 @@ struct OnboardingContainerView: View {
     @StateObject var viewModel = OnboardingViewModel()
     var onComplete: () -> Void
 
+    private var progressFraction: CGFloat {
+        let total = CGFloat(OnboardingStep.allCases.count - 1)
+        guard total > 0 else { return 0 }
+        return CGFloat(viewModel.currentStep.rawValue) / total
+    }
+
     var body: some View {
         ZStack {
             Color.amberBackground
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Top bar: back button + progress dots
+                // Top bar: back button + progress bar
                 HStack {
                     if viewModel.currentStep != .welcome && viewModel.currentStep != .complete {
                         Button(action: { viewModel.previousStep() }) {
@@ -32,20 +38,20 @@ struct OnboardingContainerView: View {
 
                     Spacer()
 
-                    // Progress dots
-                    HStack(spacing: 6) {
-                        ForEach(OnboardingStep.allCases, id: \.self) { step in
-                            Circle()
-                                .fill(step == viewModel.currentStep
-                                      ? Color.amberBlue
-                                      : step.rawValue < viewModel.currentStep.rawValue
-                                        ? Color.amberBlue.opacity(0.5)
-                                        : Color.white.opacity(0.2))
-                                .frame(width: step == viewModel.currentStep ? 10 : 7,
-                                       height: step == viewModel.currentStep ? 10 : 7)
-                                .animation(.spring(response: 0.3), value: viewModel.currentStep)
+                    // Progress bar
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            Capsule()
+                                .fill(Color.white.opacity(0.12))
+                                .frame(height: 2)
+                            Capsule()
+                                .fill(Color.amberBlue)
+                                .frame(width: max(0, geo.size.width * progressFraction), height: 2)
+                                .animation(.spring(response: 0.4, dampingFraction: 0.85), value: viewModel.currentStep)
                         }
                     }
+                    .frame(height: 2)
+                    .frame(maxWidth: 200)
 
                     Spacer()
                     Spacer().frame(width: 44)

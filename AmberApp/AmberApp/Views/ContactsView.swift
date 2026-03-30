@@ -43,6 +43,7 @@ struct AmberContact: Identifiable, Hashable {
     let groups: [String]
     let cadence: ConnectionCadence
     let daysSinceContact: Int
+    let channels: [String]
 
     var firstLetter: String {
         String(name.prefix(1)).uppercased()
@@ -80,11 +81,23 @@ struct ContactGroup: Identifiable {
     let members: [String]
 }
 
+enum ContactSortMode: String, CaseIterable {
+    case groups, alphabetical, channels
+    var label: String {
+        switch self {
+        case .groups: return "Groups"
+        case .alphabetical: return "A-Z"
+        case .channels: return "Channels"
+        }
+    }
+}
+
 // MARK: - ContactsView
 
 struct ContactsView: View {
     @State private var searchText: String = ""
     @State private var showAddContact: Bool = false
+    @State private var sortMode: ContactSortMode = .groups
 
     // MARK: - Sample Data
 
@@ -97,17 +110,17 @@ struct ContactsView: View {
     ]
 
     private let sampleContacts: [AmberContact] = [
-        AmberContact(name: "Angela Chen", subtitle: "Design Lead, Amber", isOnAmber: true, avatarColor: .healthEmotional, groups: ["USC", "Amber Team"], cadence: .weekly, daysSinceContact: 3),
-        AmberContact(name: "Arjun Patel", subtitle: "USC '29", isOnAmber: false, avatarColor: .amberGold, groups: ["USC"], cadence: .monthly, daysSinceContact: 8),
-        AmberContact(name: "Chetna Tiwari", subtitle: "Mom", isOnAmber: false, avatarColor: .healthSpiritual, groups: ["Family"], cadence: .weekly, daysSinceContact: 2),
-        AmberContact(name: "Dev Kapoor", subtitle: "MAYA Biotech", isOnAmber: true, avatarColor: .healthPhysical, groups: ["Amber Team"], cadence: .monthly, daysSinceContact: 14),
-        AmberContact(name: "Kaitlyn Rivera", subtitle: "Product, Amber", isOnAmber: true, avatarColor: .healthSocial, groups: ["Amber Team"], cadence: .weekly, daysSinceContact: 5),
-        AmberContact(name: "Michelle Wong", subtitle: "USC Volleyball", isOnAmber: false, avatarColor: .healthEmotional, groups: ["USC"], cadence: .quarterly, daysSinceContact: 10),
-        AmberContact(name: "Priya Sharma", subtitle: "Engineer", isOnAmber: true, avatarColor: .healthFinancial, groups: ["Other"], cadence: .monthly, daysSinceContact: 25),
-        AmberContact(name: "Rohan Mehta", subtitle: "BMA Team", isOnAmber: false, avatarColor: .amberWarm, groups: ["BMA"], cadence: .monthly, daysSinceContact: 18),
-        AmberContact(name: "Sindhu Tiwari", subtitle: "Sister", isOnAmber: false, avatarColor: .healthSpiritual, groups: ["Family"], cadence: .weekly, daysSinceContact: 4),
-        AmberContact(name: "Umesh Tiwari", subtitle: "Dad", isOnAmber: false, avatarColor: .amberPrimary, groups: ["Family"], cadence: .weekly, daysSinceContact: 2),
-        AmberContact(name: "Victor Huang", subtitle: "Product Strategy", isOnAmber: true, avatarColor: .healthIntellectual, groups: ["Amber Team"], cadence: .quarterly, daysSinceContact: 21),
+        AmberContact(name: "Angela Chen", subtitle: "Design Lead, Amber", isOnAmber: true, avatarColor: .healthEmotional, groups: ["USC", "Amber Team"], cadence: .weekly, daysSinceContact: 3, channels: ["iMessage", "Instagram"]),
+        AmberContact(name: "Arjun Patel", subtitle: "USC '29", isOnAmber: false, avatarColor: .amberGold, groups: ["USC"], cadence: .monthly, daysSinceContact: 8, channels: ["Instagram", "Twitter"]),
+        AmberContact(name: "Chetna Tiwari", subtitle: "Mom", isOnAmber: false, avatarColor: .healthSpiritual, groups: ["Family"], cadence: .weekly, daysSinceContact: 2, channels: ["iMessage", "Phone"]),
+        AmberContact(name: "Dev Kapoor", subtitle: "MAYA Biotech", isOnAmber: true, avatarColor: .healthPhysical, groups: ["Amber Team"], cadence: .monthly, daysSinceContact: 14, channels: ["iMessage", "Twitter"]),
+        AmberContact(name: "Kaitlyn Rivera", subtitle: "Product, Amber", isOnAmber: true, avatarColor: .healthSocial, groups: ["Amber Team"], cadence: .weekly, daysSinceContact: 5, channels: ["iMessage", "Instagram"]),
+        AmberContact(name: "Michelle Wong", subtitle: "USC Volleyball", isOnAmber: false, avatarColor: .healthEmotional, groups: ["USC"], cadence: .quarterly, daysSinceContact: 10, channels: ["Instagram"]),
+        AmberContact(name: "Priya Sharma", subtitle: "Engineer", isOnAmber: true, avatarColor: .healthFinancial, groups: ["Other"], cadence: .monthly, daysSinceContact: 25, channels: ["iMessage", "Twitter"]),
+        AmberContact(name: "Rohan Mehta", subtitle: "BMA Team", isOnAmber: false, avatarColor: .amberWarm, groups: ["BMA"], cadence: .monthly, daysSinceContact: 18, channels: ["Instagram", "Phone"]),
+        AmberContact(name: "Sindhu Tiwari", subtitle: "Sister", isOnAmber: false, avatarColor: .healthSpiritual, groups: ["Family"], cadence: .weekly, daysSinceContact: 4, channels: ["iMessage", "Phone"]),
+        AmberContact(name: "Umesh Tiwari", subtitle: "Dad", isOnAmber: false, avatarColor: .amberPrimary, groups: ["Family"], cadence: .weekly, daysSinceContact: 2, channels: ["Phone"]),
+        AmberContact(name: "Victor Huang", subtitle: "Product Strategy", isOnAmber: true, avatarColor: .healthIntellectual, groups: ["Amber Team"], cadence: .quarterly, daysSinceContact: 21, channels: ["iMessage", "Instagram", "Twitter"]),
     ]
 
     // MARK: - Computed Properties
@@ -134,6 +147,23 @@ struct ContactsView: View {
         filteredContacts.filter { $0.isOverdue }
     }
 
+    private var alphabeticalSections: [(letter: String, contacts: [AmberContact])] {
+        let grouped = Dictionary(grouping: filteredContacts) { $0.firstLetter }
+        return grouped.keys.sorted().map { letter in
+            (letter: letter, contacts: grouped[letter]!.sorted { $0.name < $1.name })
+        }
+    }
+
+    private var channelSections: [(channel: String, contacts: [AmberContact])] {
+        let allChannels = ["iMessage", "Instagram", "Twitter", "Phone"]
+        return allChannels.compactMap { channel in
+            let contacts = filteredContacts.filter { $0.channels.contains(channel) }
+                .sorted { $0.name < $1.name }
+            guard !contacts.isEmpty else { return nil }
+            return (channel: channel, contacts: contacts)
+        }
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -150,13 +180,26 @@ struct ContactsView: View {
                         )
                         .padding(.horizontal, 16)
 
+                        sortModePicker
+
                         // Reconnection Stories Strip
                         if !overdueContacts.isEmpty {
                             reconnectionStrip
                         }
 
-                        ForEach(filteredGroups) { group in
-                            groupSection(group)
+                        switch sortMode {
+                        case .groups:
+                            ForEach(filteredGroups) { group in
+                                groupSection(group)
+                            }
+                        case .alphabetical:
+                            ForEach(alphabeticalSections, id: \.letter) { section in
+                                alphabeticalSection(letter: section.letter, contacts: section.contacts)
+                            }
+                        case .channels:
+                            ForEach(channelSections, id: \.channel) { section in
+                                channelSection(channel: section.channel, contacts: section.contacts)
+                            }
                         }
                     }
                     .padding(.bottom, 120)
@@ -182,6 +225,37 @@ struct ContactsView: View {
             }
         }
         .preferredColorScheme(.dark)
+    }
+
+    // MARK: - Sort Mode Picker
+
+    private var sortModePicker: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(ContactSortMode.allCases, id: \.self) { mode in
+                    let isSelected = sortMode == mode
+                    Text(mode.label)
+                        .font(.amberCaption)
+                        .foregroundStyle(isSelected ? Color.amberText : Color.amberSecondaryText)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .fill(isSelected ? Color.amberBlue.opacity(0.25) : Color.clear)
+                        )
+                        .overlay(
+                            Capsule()
+                                .stroke(isSelected ? Color.amberBlue.opacity(0.5) : Color.glassStroke, lineWidth: 1)
+                        )
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                sortMode = mode
+                            }
+                        }
+                }
+            }
+            .padding(.horizontal, 16)
+        }
     }
 
     // MARK: - Reconnection Stories Strip
@@ -276,6 +350,108 @@ struct ContactsView: View {
         }
         .liquidGlassCard()
         .padding(.horizontal, 16)
+    }
+
+    // MARK: - Alphabetical Section
+
+    private func alphabeticalSection(letter: String, contacts: [AmberContact]) -> some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack(alignment: .firstTextBaseline) {
+                Text(letter)
+                    .font(.amberHeadline)
+                    .foregroundStyle(Color.amberText)
+
+                Text("\(contacts.count)")
+                    .font(.amberCaption)
+                    .foregroundStyle(Color.amberSecondaryText)
+
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 8)
+
+            // Contact rows
+            ForEach(Array(contacts.enumerated()), id: \.element.id) { index, contact in
+                contactRow(contact)
+
+                if index < contacts.count - 1 {
+                    Color.glassStroke
+                        .frame(height: 0.5)
+                        .padding(.leading, 60)
+                }
+            }
+
+            Spacer()
+                .frame(height: 16)
+        }
+        .liquidGlassCard()
+        .padding(.horizontal, 16)
+    }
+
+    // MARK: - Channel Section
+
+    private func channelSection(channel: String, contacts: [AmberContact]) -> some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Image(systemName: channelIcon(for: channel))
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(channelColor(for: channel))
+
+                Text(channel)
+                    .font(.amberHeadline)
+                    .foregroundStyle(Color.amberText)
+
+                Text("\(contacts.count)")
+                    .font(.amberCaption)
+                    .foregroundStyle(Color.amberSecondaryText)
+
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 8)
+
+            // Contact rows
+            ForEach(Array(contacts.enumerated()), id: \.element.id) { index, contact in
+                contactRow(contact)
+
+                if index < contacts.count - 1 {
+                    Color.glassStroke
+                        .frame(height: 0.5)
+                        .padding(.leading, 60)
+                }
+            }
+
+            Spacer()
+                .frame(height: 16)
+        }
+        .liquidGlassCard()
+        .padding(.horizontal, 16)
+    }
+
+    // MARK: - Channel Helpers
+
+    private func channelIcon(for channel: String) -> String {
+        switch channel {
+        case "iMessage": return "message.fill"
+        case "Instagram": return "camera.fill"
+        case "Twitter": return "at"
+        case "Phone": return "phone.fill"
+        default: return "questionmark.circle"
+        }
+    }
+
+    private func channelColor(for channel: String) -> Color {
+        switch channel {
+        case "iMessage": return .amberSuccess
+        case "Instagram": return .healthEmotional
+        case "Twitter": return .healthSocial
+        case "Phone": return .amberGold
+        default: return .amberSecondaryText
+        }
     }
 
     // MARK: - Contact Row
