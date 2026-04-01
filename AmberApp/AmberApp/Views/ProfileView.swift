@@ -88,7 +88,7 @@ struct ProfileView: View {
                     .font(.amberHeadline)
                     .foregroundStyle(Color.amberText)
 
-                Text("Building the future of relationships")
+                Text("Building the future of relationships!")
                     .font(.amberCaption)
                     .foregroundStyle(Color.amberSecondaryText)
             }
