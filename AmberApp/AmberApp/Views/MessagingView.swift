@@ -2,43 +2,79 @@
 //  MessagingView.swift
 //  AmberApp
 //
-//  Liquid glass messaging view — minimal, dark, zero clutter.
+//  Minimal dark messaging view — search bar, status bubbles,
+//  Circles + Other sections in liquid glass cards.
 //
 
 import SwiftUI
 
-// MARK: - Data Models (CircleType defined in Models/Circle.swift)
+// MARK: - Data Models
 
-struct ClosestPerson: Identifiable {
-    let id = UUID()
-    let name: String
-    let initials: String
-    let isOnline: Bool
-    let isActive: Bool
-}
-
-struct CircleConversation: Identifiable {
+struct Conversation: Identifiable {
     let id = UUID()
     let name: String
     let icon: String
-    let type: CircleType
     let lastMessage: String
     let timeAgo: String
     let unreadCount: Int
+    let hasActivity: Bool
     let hasAmberAgent: Bool
 }
 
 // MARK: - MessagingView
 
 struct MessagingView: View {
-    @State private var showCreateCircle = false
+    @State private var showCompose = false
+    @State private var searchText = ""
+
+    private var filteredCircles: [Conversation] {
+        guard !searchText.isEmpty else { return circleData }
+        let q = searchText.lowercased()
+        return circleData.filter {
+            $0.name.lowercased().contains(q) || $0.lastMessage.lowercased().contains(q)
+        }
+    }
+
+    private var filteredOther: [Conversation] {
+        guard !searchText.isEmpty else { return otherData }
+        let q = searchText.lowercased()
+        return otherData.filter {
+            $0.name.lowercased().contains(q) || $0.lastMessage.lowercased().contains(q)
+        }
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 24) {
-                    circlesSection
-                    otherSection
+                VStack(spacing: 20) {
+                    // Search bar
+                    searchBar
+
+                    // Status bubbles
+                    StatusRowView(statuses: StatusNote.samples) {
+                        print("[StatusNote] Your note tapped — compose sheet TBD")
+                    }
+
+                    // Conversation sections
+                    if !filteredCircles.isEmpty {
+                        circlesSection
+                    }
+                    if !filteredOther.isEmpty {
+                        otherSection
+                    }
+
+                    // Empty state when search yields nothing
+                    if filteredCircles.isEmpty && filteredOther.isEmpty && !searchText.isEmpty {
+                        VStack(spacing: 10) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 32, weight: .light))
+                                .foregroundStyle(Color.amberTertiaryText)
+                            Text("No conversations found")
+                                .font(.amberCaption)
+                                .foregroundStyle(Color.amberSecondaryText)
+                        }
+                        .padding(.top, 40)
+                    }
                 }
                 .padding(.top, 8)
                 .padding(.bottom, 120)
@@ -46,42 +82,79 @@ struct MessagingView: View {
             .background(Color.black.ignoresSafeArea())
             .navigationTitle("Messages")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackground(Color.black, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { showCreateCircle = true } label: {
+                    Button { showCompose = true } label: {
                         Image(systemName: "square.and.pencil")
                             .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.amberText)
+                            .foregroundStyle(Color.amberText)
+                            .frame(width: 32, height: 32)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .strokeBorder(Color.glassStroke, lineWidth: 0.5)
+                            )
                     }
                 }
             }
-            .sheet(isPresented: $showCreateCircle) {
-                createCirclePlaceholder
+            .sheet(isPresented: $showCompose) {
+                composePlaceholder
             }
         }
+        .preferredColorScheme(.dark)
+    }
+
+    // MARK: - Search Bar
+
+    private var searchBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Color.amberSecondaryText)
+
+            TextField("Search", text: $searchText)
+                .font(.system(size: 16))
+                .foregroundStyle(Color.amberText)
+
+            if !searchText.isEmpty {
+                Button { searchText = "" } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(Color.amberSecondaryText)
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color(hex: "1F2C34"), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .padding(.horizontal, 16)
     }
 
     // MARK: - Circles Section
 
     private var circlesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Circles")
-                .amberSectionHeader()
-                .padding(.horizontal, 16)
+        VStack(alignment: .leading, spacing: 10) {
+            Text("CIRCLES")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.amberSecondaryText)
+                .tracking(1)
+                .padding(.horizontal, 20)
 
             VStack(spacing: 0) {
-                ForEach(Array(circleConversations.enumerated()), id: \.element.id) { index, circle in
+                ForEach(Array(filteredCircles.enumerated()), id: \.element.id) { index, convo in
                     NavigationLink {
-                        ChatDetailView(conversationName: circle.name, hasAmberAgent: circle.hasAmberAgent)
+                        ChatDetailView(conversationName: convo.name, hasAmberAgent: convo.hasAmberAgent)
                     } label: {
-                        conversationRow(circle)
+                        conversationRow(convo)
                     }
+                    .buttonStyle(.plain)
 
-                    if index < circleConversations.count - 1 {
-                        Divider()
-                            .background(Color.glassStroke)
-                            .padding(.leading, 72)
+                    if index < filteredCircles.count - 1 {
+                        Color.glassStroke
+                            .frame(height: 0.5)
+                            .padding(.leading, 68)
                     }
                 }
             }
@@ -93,23 +166,26 @@ struct MessagingView: View {
     // MARK: - Other Section
 
     private var otherSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Other")
-                .amberSectionHeader()
-                .padding(.horizontal, 16)
+        VStack(alignment: .leading, spacing: 10) {
+            Text("OTHER")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.amberSecondaryText)
+                .tracking(1)
+                .padding(.horizontal, 20)
 
             VStack(spacing: 0) {
-                ForEach(Array(otherConversations.enumerated()), id: \.element.id) { index, circle in
+                ForEach(Array(filteredOther.enumerated()), id: \.element.id) { index, convo in
                     NavigationLink {
-                        ChatDetailView(conversationName: circle.name, hasAmberAgent: circle.hasAmberAgent)
+                        ChatDetailView(conversationName: convo.name, hasAmberAgent: convo.hasAmberAgent)
                     } label: {
-                        conversationRow(circle)
+                        conversationRow(convo)
                     }
+                    .buttonStyle(.plain)
 
-                    if index < otherConversations.count - 1 {
-                        Divider()
-                            .background(Color.glassStroke)
-                            .padding(.leading, 72)
+                    if index < filteredOther.count - 1 {
+                        Color.glassStroke
+                            .frame(height: 0.5)
+                            .padding(.leading, 68)
                     }
                 }
             }
@@ -120,89 +196,89 @@ struct MessagingView: View {
 
     // MARK: - Conversation Row
 
-    private func conversationRow(_ circle: CircleConversation) -> some View {
+    private func conversationRow(_ convo: Conversation) -> some View {
         HStack(spacing: 12) {
-            // Icon container
-            Circle()
-                .fill(.regularMaterial)
-                .frame(width: 44, height: 44)
-                .overlay(
-                    Image(systemName: circle.icon)
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.amberSecondaryText)
-                )
+            ZStack {
+                Circle()
+                    .fill(Color.amberSurface)
+                    .frame(width: 44, height: 44)
+                Image(systemName: convo.icon)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(Color.amberSecondaryText)
+            }
 
-            // Content
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 5) {
-                    Text(circle.name)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(convo.name)
                         .font(.amberBody)
-                        .foregroundColor(.amberText)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.amberText)
+                        .lineLimit(1)
 
-                    if circle.hasAmberAgent {
+                    if convo.hasActivity {
+                        Circle()
+                            .fill(Color.amberWarm)
+                            .frame(width: 7, height: 7)
+                    }
+
+                    if convo.hasAmberAgent {
                         Image(systemName: "hexagon.fill")
                             .font(.system(size: 8))
-                            .foregroundColor(.amberWarm)
+                            .foregroundStyle(Color.amberWarm)
                     }
 
                     Spacer()
 
-                    Text(circle.timeAgo)
+                    Text(convo.timeAgo)
                         .font(.amberCaption)
-                        .foregroundColor(.amberSecondaryText)
+                        .foregroundStyle(Color.amberSecondaryText)
                 }
 
                 HStack {
-                    Text(circle.lastMessage)
+                    Text(convo.lastMessage)
                         .font(.amberCaption)
-                        .foregroundColor(.amberSecondaryText)
+                        .foregroundStyle(Color.amberSecondaryText)
                         .lineLimit(1)
 
                     Spacer()
 
-                    if circle.unreadCount > 0 {
-                        Text("\(circle.unreadCount)")
+                    if convo.unreadCount > 0 {
+                        Text("\(convo.unreadCount)")
                             .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundStyle(.white)
                             .frame(minWidth: 20, minHeight: 20)
-                            .background(Color.amberBlue, in: Circle())
+                            .background(Color.amberWarm, in: Circle())
                     }
                 }
             }
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.vertical, 12)
         .contentShape(Rectangle())
     }
 
-    // MARK: - Create Circle Sheet
+    // MARK: - Compose Placeholder
 
-    private var createCirclePlaceholder: some View {
+    private var composePlaceholder: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-
             VStack(spacing: 20) {
                 RoundedRectangle(cornerRadius: 3, style: .continuous)
                     .fill(Color.white.opacity(0.2))
                     .frame(width: 40, height: 5)
                     .padding(.top, 12)
-
                 Spacer()
-
                 VStack(spacing: 12) {
                     Image(systemName: "circle.hexagongrid.fill")
                         .font(.system(size: 48))
-                        .foregroundColor(.amberWarm)
-
-                    Text("Create a Circle")
+                        .foregroundStyle(Color.amberWarm)
+                    Text("New Message")
                         .font(.amberTitle2)
-                        .foregroundColor(.amberText)
-
+                        .foregroundStyle(Color.amberText)
                     Text("Coming soon")
                         .font(.amberFootnote)
-                        .foregroundColor(.amberSecondaryText)
+                        .foregroundStyle(Color.amberSecondaryText)
                 }
-
                 Spacer()
             }
         }
@@ -212,125 +288,22 @@ struct MessagingView: View {
 
     // MARK: - Sample Data
 
-    private var closestPeople: [ClosestPerson] {
+    private var circleData: [Conversation] {
         [
-            ClosestPerson(name: "Angela Chen", initials: "AC", isOnline: true, isActive: true),
-            ClosestPerson(name: "Kaitlyn Lee", initials: "KL", isOnline: true, isActive: true),
-            ClosestPerson(name: "Victor Reyes", initials: "VR", isOnline: false, isActive: true),
-            ClosestPerson(name: "Michelle Park", initials: "MP", isOnline: true, isActive: false),
-            ClosestPerson(name: "Rohan Mehta", initials: "RM", isOnline: false, isActive: true),
-            ClosestPerson(name: "Priya Sharma", initials: "PS", isOnline: false, isActive: false),
-            ClosestPerson(name: "Dev Patel", initials: "DP", isOnline: true, isActive: false),
-            ClosestPerson(name: "Sindhu Tiwari", initials: "ST", isOnline: false, isActive: true),
+            Conversation(name: "MAYA Biotech", icon: "flask.fill", lastMessage: "lab results came back — let's debrief tmrw", timeAgo: "4m", unreadCount: 3, hasActivity: false, hasAmberAgent: true),
+            Conversation(name: "Delta Gamma Chapter", icon: "shield.fill", lastMessage: "philanthropy event sign-ups due friday", timeAgo: "12m", unreadCount: 7, hasActivity: false, hasAmberAgent: false),
+            Conversation(name: "CS 270 Study Group", icon: "chevron.left.forwardslash.chevron.right", lastMessage: "anyone free to review proofs tonight?", timeAgo: "28m", unreadCount: 2, hasActivity: false, hasAmberAgent: false),
+            Conversation(name: "Angela & Me", icon: "person.fill", lastMessage: "omg yes that sounds perfect", timeAgo: "35m", unreadCount: 1, hasActivity: true, hasAmberAgent: true),
         ]
     }
 
-    private var circleConversations: [CircleConversation] {
+    private var otherData: [Conversation] {
         [
-            CircleConversation(
-                name: "MAYA Biotech",
-                icon: "flask.fill",
-                type: .manyToMany,
-                lastMessage: "lab results came back — let's debrief tmrw",
-                timeAgo: "4m",
-                unreadCount: 3,
-                hasAmberAgent: true
-            ),
-            CircleConversation(
-                name: "Delta Gamma Chapter",
-                icon: "triangle.fill",
-                type: .manyToMany,
-                lastMessage: "philanthropy event sign-ups due friday",
-                timeAgo: "12m",
-                unreadCount: 7,
-                hasAmberAgent: false
-            ),
-            CircleConversation(
-                name: "CS 270 Study Group",
-                icon: "chevron.left.forwardslash.chevron.right",
-                type: .manyToMany,
-                lastMessage: "anyone free to review proofs tonight?",
-                timeAgo: "28m",
-                unreadCount: 2,
-                hasAmberAgent: false
-            ),
-            CircleConversation(
-                name: "Angela & Me",
-                icon: "person.fill",
-                type: .oneToOne,
-                lastMessage: "omg yes that sounds perfect",
-                timeAgo: "35m",
-                unreadCount: 1,
-                hasAmberAgent: true
-            ),
-            CircleConversation(
-                name: "Victor & Me",
-                icon: "person.fill",
-                type: .oneToOne,
-                lastMessage: "see you at the gym at 6",
-                timeAgo: "1h",
-                unreadCount: 0,
-                hasAmberAgent: false
-            ),
-            CircleConversation(
-                name: "Club Announcements",
-                icon: "megaphone.fill",
-                type: .oneToMany,
-                lastMessage: "meeting moved to THH 301 this week",
-                timeAgo: "2h",
-                unreadCount: 0,
-                hasAmberAgent: true
-            ),
-            CircleConversation(
-                name: "Family",
-                icon: "heart.fill",
-                type: .manyToMany,
-                lastMessage: "call me when you can beta",
-                timeAgo: "3h",
-                unreadCount: 1,
-                hasAmberAgent: false
-            ),
-            CircleConversation(
-                name: "Roommates",
-                icon: "house.fill",
-                type: .manyToMany,
-                lastMessage: "who took my oat milk",
-                timeAgo: "5h",
-                unreadCount: 0,
-                hasAmberAgent: false
-            ),
-        ]
-    }
-
-    private var otherConversations: [CircleConversation] {
-        [
-            CircleConversation(
-                name: "USC Housing",
-                icon: "building.2.fill",
-                type: .oneToMany,
-                lastMessage: "room selection opens April 1",
-                timeAgo: "1d",
-                unreadCount: 0,
-                hasAmberAgent: false
-            ),
-            CircleConversation(
-                name: "Intramural Soccer",
-                icon: "figure.soccer",
-                type: .manyToMany,
-                lastMessage: "game rescheduled to wednesday",
-                timeAgo: "2d",
-                unreadCount: 0,
-                hasAmberAgent: false
-            ),
-            CircleConversation(
-                name: "Orientation Group 14",
-                icon: "person.3.fill",
-                type: .manyToMany,
-                lastMessage: "throwback to week 1 lol",
-                timeAgo: "5d",
-                unreadCount: 0,
-                hasAmberAgent: false
-            ),
+            Conversation(name: "Victor & Me", icon: "person.fill", lastMessage: "see you at the gym at 6", timeAgo: "1h", unreadCount: 0, hasActivity: false, hasAmberAgent: false),
+            Conversation(name: "Club Announcements", icon: "megaphone.fill", lastMessage: "meeting moved to THH 301 this week", timeAgo: "2h", unreadCount: 0, hasActivity: true, hasAmberAgent: true),
+            Conversation(name: "Family", icon: "heart.fill", lastMessage: "call me when you can beta", timeAgo: "3h", unreadCount: 1, hasActivity: false, hasAmberAgent: false),
+            Conversation(name: "Roommates", icon: "house.fill", lastMessage: "who took my oat milk", timeAgo: "5h", unreadCount: 0, hasActivity: false, hasAmberAgent: false),
+            Conversation(name: "Intramural Soccer", icon: "figure.soccer", lastMessage: "game time changed to 4pm", timeAgo: "2d", unreadCount: 0, hasActivity: false, hasAmberAgent: false),
         ]
     }
 }
@@ -339,5 +312,4 @@ struct MessagingView: View {
 
 #Preview {
     MessagingView()
-        .preferredColorScheme(.dark)
 }

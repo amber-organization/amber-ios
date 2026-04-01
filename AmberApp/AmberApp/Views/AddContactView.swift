@@ -1,181 +1,156 @@
 //
 //  AddContactView.swift
-//  Amber
+//  AmberApp
 //
-//  Created on 2026-01-20.
+//  Dark-themed form to create a new contact and save to device via CNContactStore.
 //
 
 import SwiftUI
-import PhotosUI
+import Contacts
 
 struct AddContactView: View {
     @Environment(\.dismiss) private var dismiss
+    var onSaved: (() -> Void)?
+
     @State private var firstName = ""
     @State private var lastName = ""
-    @State private var company = ""
-    @State private var phoneNumber = ""
+    @State private var phone = ""
     @State private var email = ""
-    @State private var linkedinURL = ""
-    @State private var notes = ""
-    @State private var selectedPhoto: PhotosPickerItem?
-    @State private var profileImage: Image?
+    @State private var isSaving = false
+    @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
-            List {
-                // Photo section
-                Section {
-                    HStack {
-                        Spacer()
-                        VStack(spacing: 12) {
-                            PhotosPicker(selection: $selectedPhoto, matching: .images) {
-                                ZStack {
-                                    if let profileImage {
-                                        profileImage
-                                            .resizable()
-                                            .scaledToFill()
-                                            .frame(width: 100, height: 100)
-                                            .clipShape(Circle())
-                                    } else {
-                                        Circle()
-                                            .fill(Color(.systemGray5))
-                                            .frame(width: 100, height: 100)
-                                            .overlay {
-                                                Image(systemName: "camera.fill")
-                                                    .font(.system(size: 32))
-                                                    .foregroundColor(.secondary)
-                                            }
-                                    }
-                                }
-                            }
+            ZStack {
+                Color.black.ignoresSafeArea()
 
-                            Text("add photo")
-                                .font(.subheadline)
-                                .foregroundColor(.amberBlue)
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Avatar placeholder
+                        ZStack {
+                            Circle()
+                                .fill(Color.amberSurface)
+                                .frame(width: 80, height: 80)
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 32, weight: .medium))
+                                .foregroundStyle(Color.amberSecondaryText)
                         }
-                        Spacer()
-                    }
-                    .listRowBackground(Color.clear)
-                    .padding(.vertical, 8)
-                }
+                        .padding(.top, 24)
 
-                // Name section
-                Section {
-                    HStack {
-                        Text("First")
-                            .foregroundColor(.primary)
-                            .frame(width: 80, alignment: .leading)
-                        TextField("", text: $firstName)
-                    }
+                        // Fields
+                        VStack(spacing: 0) {
+                            inputField(label: "First Name", text: $firstName, placeholder: "Required")
+                            fieldDivider
+                            inputField(label: "Last Name", text: $lastName, placeholder: "Optional")
+                            fieldDivider
+                            inputField(label: "Phone", text: $phone, placeholder: "Optional", keyboard: .phonePad)
+                            fieldDivider
+                            inputField(label: "Email", text: $email, placeholder: "Optional", keyboard: .emailAddress)
+                        }
+                        .background(Color.amberSurface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(Color.glassStroke, lineWidth: 0.5)
+                        )
+                        .padding(.horizontal, 16)
 
-                    HStack {
-                        Text("Last")
-                            .foregroundColor(.primary)
-                            .frame(width: 80, alignment: .leading)
-                        TextField("", text: $lastName)
+                        // Error
+                        if let errorMessage {
+                            Text(errorMessage)
+                                .font(.amberCaption)
+                                .foregroundStyle(Color.amberError)
+                                .padding(.horizontal, 16)
+                        }
                     }
-
-                    HStack {
-                        Text("Company")
-                            .foregroundColor(.primary)
-                            .frame(width: 80, alignment: .leading)
-                        TextField("", text: $company)
-                    }
-                }
-
-                // Phone section
-                Section {
-                    HStack {
-                        Text("mobile")
-                            .foregroundColor(.secondary)
-                            .frame(width: 80, alignment: .leading)
-                        TextField("", text: $phoneNumber)
-                            .keyboardType(.phonePad)
-                    }
-
-                    Button {
-                        // Add phone number
-                    } label: {
-                        Text("add phone")
-                            .foregroundColor(.amberBlue)
-                    }
-                }
-
-                // Email section
-                Section {
-                    HStack {
-                        Text("email")
-                            .foregroundColor(.secondary)
-                            .frame(width: 80, alignment: .leading)
-                        TextField("", text: $email)
-                            .keyboardType(.emailAddress)
-                            .autocapitalization(.none)
-                    }
-
-                    Button {
-                        // Add email
-                    } label: {
-                        Text("add email")
-                            .foregroundColor(.amberBlue)
-                    }
-                }
-
-                // Social section
-                Section {
-                    HStack {
-                        Text("LinkedIn")
-                            .foregroundColor(.primary)
-                            .frame(width: 80, alignment: .leading)
-                        TextField("URL", text: $linkedinURL)
-                            .keyboardType(.URL)
-                            .autocapitalization(.none)
-                    }
-
-                    Button {
-                        // Add social profile
-                    } label: {
-                        Text("add social profile")
-                            .foregroundColor(.amberBlue)
-                    }
-                }
-
-                // Notes section
-                Section {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Notes")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        TextEditor(text: $notes)
-                            .frame(height: 80)
-                    }
+                    .padding(.bottom, 40)
                 }
             }
             .navigationTitle("New Contact")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color.black, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
+                    Button("Cancel") { dismiss() }
+                        .foregroundStyle(Color.amberSecondaryText)
                 }
-
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        // TODO: Save contact
-                        dismiss()
+                    Button {
+                        saveContact()
+                    } label: {
+                        if isSaving {
+                            ProgressView()
+                                .tint(.amberWarm)
+                        } else {
+                            Text("Save")
+                                .fontWeight(.semibold)
+                                .foregroundStyle(firstName.isEmpty ? Color.amberTertiaryText : Color.amberWarm)
+                        }
                     }
-                    .fontWeight(.semibold)
-                    .disabled(firstName.isEmpty && lastName.isEmpty)
+                    .disabled(firstName.isEmpty || isSaving)
                 }
             }
         }
-        .onChange(of: selectedPhoto) { _, newItem in
-            Task {
-                if let data = try? await newItem?.loadTransferable(type: Data.self),
-                   let uiImage = UIImage(data: data) {
-                    profileImage = Image(uiImage: uiImage)
-                }
-            }
+        .preferredColorScheme(.dark)
+    }
+
+    // MARK: - Input Field
+
+    private func inputField(label: String, text: Binding<String>, placeholder: String, keyboard: UIKeyboardType = .default) -> some View {
+        HStack(spacing: 0) {
+            Text(label)
+                .font(.amberBody)
+                .foregroundStyle(Color.amberSecondaryText)
+                .frame(width: 90, alignment: .leading)
+
+            TextField("", text: text, prompt: Text(placeholder).foregroundStyle(Color.amberTertiaryText))
+                .font(.amberBody)
+                .foregroundStyle(Color.amberText)
+                .keyboardType(keyboard)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(keyboard == .emailAddress ? .never : .words)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+    }
+
+    private var fieldDivider: some View {
+        Color.glassStroke
+            .frame(height: 0.5)
+            .padding(.leading, 106)
+    }
+
+    // MARK: - Save
+
+    private func saveContact() {
+        isSaving = true
+        errorMessage = nil
+
+        let newContact = CNMutableContact()
+        newContact.givenName = firstName.trimmingCharacters(in: .whitespaces)
+        newContact.familyName = lastName.trimmingCharacters(in: .whitespaces)
+
+        let trimmedPhone = phone.trimmingCharacters(in: .whitespaces)
+        if !trimmedPhone.isEmpty {
+            newContact.phoneNumbers = [CNLabeledValue(label: CNLabelPhoneNumberMobile, value: CNPhoneNumber(stringValue: trimmedPhone))]
+        }
+
+        let trimmedEmail = email.trimmingCharacters(in: .whitespaces)
+        if !trimmedEmail.isEmpty {
+            newContact.emailAddresses = [CNLabeledValue(label: CNLabelHome, value: trimmedEmail as NSString)]
+        }
+
+        let saveRequest = CNSaveRequest()
+        saveRequest.add(newContact, toContainerWithIdentifier: nil)
+
+        do {
+            try CNContactStore().execute(saveRequest)
+            isSaving = false
+            onSaved?()
+            dismiss()
+        } catch {
+            isSaving = false
+            errorMessage = "Failed to save: \(error.localizedDescription)"
         }
     }
 }
