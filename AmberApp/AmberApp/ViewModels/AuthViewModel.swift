@@ -190,7 +190,10 @@ class AuthViewModel: ObservableObject {
 
     func logout() {
         Task {
-            try? await privy?.logout()
+            let state = await privy?.getAuthState()
+            if case .authenticated(let user) = state {
+                try? await user.logout()
+            }
             accessToken = nil
             APIClient.shared.accessToken = nil
             isAuthenticated = false
