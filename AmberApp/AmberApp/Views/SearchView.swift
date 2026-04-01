@@ -50,11 +50,10 @@ enum SearchCategory: String, CaseIterable, Identifiable {
 // MARK: - Search View
 
 struct SearchView: View {
+    @Binding var searchText: String
     @StateObject private var togariService = TogariService()
     @StateObject private var contactsService = ContactsService()
-    @State private var searchText = ""
     @State private var activeCategory: SearchCategory? = nil
-    @State private var showSearchSheet = false
 
     private var localMatches: [CNContact] {
         guard !searchText.isEmpty else { return [] }
@@ -65,34 +64,33 @@ struct SearchView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Color.black.ignoresSafeArea()
+        ZStack {
+            Color.black.ignoresSafeArea()
 
-                ScrollView {
-                    VStack(spacing: 24) {
-                        // Category Grid (2×2)
-                        categoryGrid
-                            .padding(.horizontal, 16)
-                            .padding(.top, 8)
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Category Grid (2×2)
+                    categoryGrid
+                        .padding(.horizontal, 16)
+                        .padding(.top, 16)
 
-                        // Active category results
-                        if let category = activeCategory {
-                            activeCategoryContent(category)
+                    // Results based on search text + active category
+                    if !searchText.isEmpty {
+                        if !localMatches.isEmpty {
+                            localContactsResults
                         }
+                        exaResults
+                    } else if let category = activeCategory {
+                        activeCategoryContent(category)
                     }
-                    .padding(.bottom, 120)
                 }
-            }
-            .navigationTitle("Search")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbarBackground(Color.black, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .sheet(isPresented: $showSearchSheet) {
-                searchSheet
+                .padding(.bottom, 120)
             }
         }
         .preferredColorScheme(.dark)
+        .onChange(of: searchText) {
+            togariService.search(query: searchText)
+        }
         .task {
             let granted = await contactsService.requestAccess()
             if granted { await contactsService.fetchAllContacts() }
@@ -117,14 +115,7 @@ struct SearchView: View {
 
         return Button {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                if activeCategory == category {
-                    activeCategory = nil
-                } else {
-                    activeCategory = category
-                    if category == .contacts || category == .exa {
-                        showSearchSheet = true
-                    }
-                }
+                activeCategory = activeCategory == category ? nil : category
             }
         } label: {
             VStack(alignment: .leading, spacing: 10) {
@@ -334,51 +325,4 @@ struct SearchView: View {
         .padding(.horizontal, 16)
     }
 
-    // MARK: - Search Sheet (Bottom)
-
-    private var searchSheet: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                LiquidGlassSearchBar(
-                    searchText: $searchText,
-                    placeholder: activeCategory == .contacts ? "Search contacts..." : "Search people & companies..."
-                )
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
-                .onChange(of: searchText) {
-                    if activeCategory == .exa {
-                        togariService.search(query: searchText)
-                    }
-                }
-
-                ScrollView {
-                    VStack(spacing: 16) {
-                        if activeCategory == .contacts && !localMatches.isEmpty {
-                            localContactsResults
-                        } else if activeCategory == .exa {
-                            exaResults
-                        }
-                    }
-                    .padding(.top, 16)
-                    .padding(.bottom, 40)
-                }
-            }
-            .background(Color.black)
-            .navigationTitle(activeCategory?.rawValue ?? "Search")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(Color.black, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
-                        showSearchSheet = false
-                    }
-                    .foregroundStyle(Color.amberWarm)
-                }
-            }
-        }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(.black)
-    }
 }

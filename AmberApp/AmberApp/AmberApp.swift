@@ -63,11 +63,14 @@ struct SplashView: View {
     }
 }
 
-// MARK: - Content View (5-tab layout)
+// MARK: - Content View (4-tab layout + expandable search)
 
 struct ContentView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var selectedTab = 2
+    @State private var isSearchExpanded = false
+    @State private var searchText = ""
+    @FocusState private var searchFocused: Bool
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -81,17 +84,30 @@ struct ContentView: View {
                 case 1:  MessagingView()
                 case 2:  TodayView()
                 case 3:  ProfileView()
-                case 4:  SearchView()
                 default: TodayView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // Floating liquid glass tab bar
-            CustomTabBar(selectedTab: $selectedTab)
-                .ignoresSafeArea(.keyboard)
+            // Search overlay — slides up over content when search is expanded
+            if isSearchExpanded {
+                SearchView(searchText: $searchText)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(1)
+            }
+
+            // Floating liquid glass tab bar (or expanded search bar)
+            CustomTabBar(
+                selectedTab: $selectedTab,
+                isSearchExpanded: $isSearchExpanded,
+                searchText: $searchText,
+                searchFocused: $searchFocused
+            )
+            .ignoresSafeArea(.keyboard)
+            .zIndex(2)
         }
         .preferredColorScheme(.dark)
         .environmentObject(authViewModel)
+        .animation(.spring(response: 0.4, dampingFraction: 0.82), value: isSearchExpanded)
     }
 }
