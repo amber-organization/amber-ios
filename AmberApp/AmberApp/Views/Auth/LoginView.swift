@@ -14,6 +14,11 @@ struct LoginView: View {
     @State private var otpCode = ""
     @State private var logoGlow = false
 
+    private var isValidEmail: Bool {
+        let pattern = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
+        return email.wholeMatch(of: pattern) != nil
+    }
+
     var body: some View {
         ZStack {
             // Background
@@ -225,7 +230,13 @@ struct LoginView: View {
                     .frame(height: 52)
                     .background(Color.amberWarm, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
-            .disabled(email.isEmpty || authViewModel.isLoading)
+            .disabled(!isValidEmail || authViewModel.isLoading)
+
+            if !email.isEmpty && !isValidEmail {
+                Text("Please enter a valid email address")
+                    .font(.amberCaption)
+                    .foregroundColor(.amberError)
+            }
 
             Button("Back") {
                 withAnimation(.spring(response: 0.3)) {

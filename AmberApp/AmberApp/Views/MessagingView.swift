@@ -72,7 +72,11 @@ struct MessagingView: View {
 
             VStack(spacing: 0) {
                 ForEach(Array(circleConversations.enumerated()), id: \.element.id) { index, circle in
-                    conversationRow(circle)
+                    NavigationLink {
+                        ChatDetailView(conversationName: circle.name, hasAmberAgent: circle.hasAmberAgent)
+                    } label: {
+                        conversationRow(circle)
+                    }
 
                     if index < circleConversations.count - 1 {
                         Divider()
@@ -96,7 +100,11 @@ struct MessagingView: View {
 
             VStack(spacing: 0) {
                 ForEach(Array(otherConversations.enumerated()), id: \.element.id) { index, circle in
-                    conversationRow(circle)
+                    NavigationLink {
+                        ChatDetailView(conversationName: circle.name, hasAmberAgent: circle.hasAmberAgent)
+                    } label: {
+                        conversationRow(circle)
+                    }
 
                     if index < otherConversations.count - 1 {
                         Divider()

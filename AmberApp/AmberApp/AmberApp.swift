@@ -80,13 +80,13 @@ struct ContentView: View {
                 case 1:
                     MessagingView()
                 case 2:
-                    AmberAIView()
+                    TodayView()
                 case 3:
-                    DailySnapshotView()
-                case 4:
                     ProfileView()
+                case 4:
+                    SearchView()
                 default:
-                    AmberAIView()
+                    TodayView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

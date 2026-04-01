@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>NSContactsUsageDescription</key>
-	<string>Amber needs access to your contacts to help you build your network.</string>
+	<string>Amber uses your contacts to help you stay connected with the people who matter most.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Amber tracks your activity and sleep to provide health insights.</string>
 	<key>NSHealthUpdateUsageDescription</key>

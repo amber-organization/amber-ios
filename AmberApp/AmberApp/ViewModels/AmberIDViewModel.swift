@@ -23,6 +23,8 @@ class AmberIDViewModel: ObservableObject {
     @Published var birthLocation: String = ""
     @Published var isProfileLoading: Bool = true
 
+    private var updateTimer: Timer?
+
     // Apple integrations
     @Published var appleContactsConnected = false
     @Published var appleHealthConnected = false
@@ -165,10 +167,14 @@ class AmberIDViewModel: ObservableObject {
 
     // MARK: - Live Tracking
 
+    deinit {
+        updateTimer?.invalidate()
+    }
+
     private func startLiveTracking() {
         // In production, this would connect to HealthKit and Screen Time APIs
         // For now, we'll simulate realistic data
-        Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
+        updateTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.updateLiveData()
             }

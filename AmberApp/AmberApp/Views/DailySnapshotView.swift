@@ -42,6 +42,7 @@ private struct RecentLocation: Identifiable {
 // MARK: - Daily Snapshot View
 
 struct DailySnapshotView: View {
+    @StateObject private var viewModel = AmberIDViewModel()
 
     // MARK: - Sample Data
 
@@ -78,10 +79,11 @@ struct DailySnapshotView: View {
 
     private var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
+        let firstName = viewModel.user.name.split(separator: " ").first.map(String.init) ?? "there"
         switch hour {
-        case 5..<12:  return "Good morning, Sagar"
-        case 12..<17: return "Good afternoon, Sagar"
-        default:      return "Good evening, Sagar"
+        case 5..<12:  return "Good morning, \(firstName)"
+        case 12..<17: return "Good afternoon, \(firstName)"
+        default:      return "Good evening, \(firstName)"
         }
     }
 

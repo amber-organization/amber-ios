@@ -2,36 +2,22 @@
 //  ProfileView.swift
 //  AmberApp
 //
-//  Created on 2026-03-26.
+//  Instagram-style profile: photos grid | tasks | health & personality.
 //
 
 import SwiftUI
-
-// MARK: - Todo Item Model
-
-struct TodoItem: Identifiable {
-    let id = UUID()
-    let title: String
-    let context: String
-    let linkedInitials: String?
-    var isCompleted: Bool
-}
+import Photos
 
 // MARK: - Profile Tab
 
 struct ProfileView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @State private var selectedTab: ProfileContentTab = .moments
+    @StateObject private var viewModel = AmberIDViewModel()
+    @StateObject private var photosService = PhotosService()
+    @State private var selectedTab: ProfileContentTab = .photos
+    @State private var showSettings = false
+    @State private var todos: [TodoItem] = TodoItem.samples
     @Namespace private var tabNamespace
-
-    // Sample to-do items
-    @State private var todos: [TodoItem] = [
-        TodoItem(title: "Reply to Angela about design review",      context: "Overdue by 2 days",    linkedInitials: "AC", isCompleted: false),
-        TodoItem(title: "Call Mom",                                  context: "Weekly check-in",      linkedInitials: "CT", isCompleted: false),
-        TodoItem(title: "Follow up with Rohan on BMA deck",         context: "Sent 3 days ago",      linkedInitials: "RM", isCompleted: false),
-        TodoItem(title: "Send birthday message to Dev",             context: "Birthday is tomorrow",  linkedInitials: "DK", isCompleted: false),
-        TodoItem(title: "Review Kaitlyn's product spec",            context: "Shared yesterday",      linkedInitials: "KR", isCompleted: true),
-    ]
 
     var body: some View {
         NavigationStack {
@@ -47,12 +33,12 @@ struct ProfileView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text("sagartiwari")
+                    Text(viewModel.username.isEmpty ? viewModel.user.name.lowercased().replacingOccurrences(of: " ", with: "") : viewModel.username)
                         .font(.amberHeadline)
                         .foregroundStyle(Color.amberText)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {}) {
+                    Button(action: { showSettings = true }) {
                         Image(systemName: "gearshape")
                             .font(.system(size: 18, weight: .medium))
                             .foregroundStyle(Color.amberText)
@@ -61,47 +47,46 @@ struct ProfileView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
+                .environmentObject(authViewModel)
+        }
+        .task {
+            let granted = await photosService.requestAccess()
+            if granted { await photosService.fetchRecentPhotos() }
+        }
     }
 
     // MARK: - Header
 
     private var headerSection: some View {
         VStack(spacing: 14) {
-            // Avatar
             ZStack {
                 Circle()
                     .fill(.regularMaterial)
                     .frame(width: 80, height: 80)
-                    .overlay(
-                        Circle()
-                            .strokeBorder(Color.glassStroke, lineWidth: 1)
-                    )
-
-                Text("ST")
+                    .overlay(Circle().strokeBorder(Color.glassStroke, lineWidth: 1))
+                Text(viewModel.user.name.split(separator: " ").map { String($0.prefix(1)) }.joined())
                     .font(.amberTitle2)
                     .foregroundStyle(Color.amberText)
             }
 
-            // Name and bio
             VStack(spacing: 4) {
-                Text("Sagar Tiwari")
+                Text(viewModel.user.name)
                     .font(.amberHeadline)
                     .foregroundStyle(Color.amberText)
-
                 Text("Building the future of relationships!")
                     .font(.amberCaption)
                     .foregroundStyle(Color.amberSecondaryText)
             }
 
-            // Stats row
             HStack(spacing: 0) {
-                profileStat(value: "127", label: "Contacts")
+                profileStat(value: "\(photosService.recentImages.count)", label: "Photos")
                 profileStat(value: "12", label: "Circles")
                 profileStat(value: "4", label: "Groups")
             }
             .padding(.top, 4)
 
-            // Edit Profile button
             Button(action: {}) {
                 Text("Edit Profile")
                     .font(.amberBody)
@@ -118,25 +103,19 @@ struct ProfileView: View {
 
     private func profileStat(value: String, label: String) -> some View {
         VStack(spacing: 2) {
-            Text(value)
-                .font(.amberTitle3)
-                .foregroundStyle(Color.amberText)
-            Text(label)
-                .font(.amberCaption)
-                .foregroundStyle(Color.amberSecondaryText)
+            Text(value).font(.amberTitle3).foregroundStyle(Color.amberText)
+            Text(label).font(.amberCaption).foregroundStyle(Color.amberSecondaryText)
         }
         .frame(maxWidth: .infinity)
     }
 
-    // MARK: - Content Tab Selector
+    // MARK: - Tab Selector
 
     private var contentTabSelector: some View {
         HStack(spacing: 0) {
             ForEach(ProfileContentTab.allCases) { tab in
                 Button {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                        selectedTab = tab
-                    }
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) { selectedTab = tab }
                 } label: {
                     VStack(spacing: 10) {
                         Image(systemName: tab.icon)
@@ -146,14 +125,9 @@ struct ProfileView: View {
                             .frame(height: 32)
 
                         ZStack(alignment: .bottom) {
-                            Rectangle()
-                                .fill(Color.clear)
-                                .frame(height: 2)
-
+                            Rectangle().fill(Color.clear).frame(height: 2)
                             if selectedTab == tab {
-                                Rectangle()
-                                    .fill(Color.amberText)
-                                    .frame(height: 2)
+                                Rectangle().fill(Color.amberText).frame(height: 2)
                                     .matchedGeometryEffect(id: "tab_indicator", in: tabNamespace)
                             }
                         }
@@ -170,37 +144,49 @@ struct ProfileView: View {
     @ViewBuilder
     private var contentBody: some View {
         switch selectedTab {
-        case .moments:
-            momentsGrid
-        case .todos:
-            todosView
-        case .about:
-            aboutView
+        case .photos: photosGrid
+        case .todos: todosView
+        case .about: aboutView
         }
     }
 
-    // MARK: - Moments Grid
+    // MARK: - Photos Grid
 
-    private var momentsGrid: some View {
+    private var photosGrid: some View {
         let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 3)
 
-        return LazyVGrid(columns: columns, spacing: 2) {
-            ForEach(0..<9, id: \.self) { index in
-                let icons = ["camera.fill", "heart.fill", "star.fill", "leaf.fill", "sun.max.fill",
-                             "moon.fill", "figure.run", "music.note", "book.fill"]
-                Color.amberSurface
-                    .aspectRatio(1, contentMode: .fit)
-                    .overlay(
-                        Image(systemName: icons[index % icons.count])
-                            .font(.system(size: 24, weight: .medium))
-                            .foregroundStyle(Color.amberTertiaryText)
-                    )
+        return Group {
+            if photosService.isLoading {
+                ProgressView("Loading photos...")
+                    .tint(.amberWarm)
+                    .foregroundStyle(Color.amberSecondaryText)
+                    .padding(.top, 40)
+            } else if photosService.recentImages.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "photo.on.rectangle.angled")
+                        .font(.system(size: 40, weight: .light))
+                        .foregroundStyle(Color.amberTertiaryText)
+                    Text("No photos yet")
+                        .font(.amberCaption)
+                        .foregroundStyle(Color.amberSecondaryText)
+                }
+                .padding(.top, 40)
+            } else {
+                LazyVGrid(columns: columns, spacing: 2) {
+                    ForEach(Array(photosService.recentImages.enumerated()), id: \.offset) { _, image in
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(minHeight: 120)
+                            .clipped()
+                    }
+                }
+                .padding(.top, 2)
             }
         }
-        .padding(.top, 2)
     }
 
-    // MARK: - Todos View
+    // MARK: - Todos
 
     private var todosView: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -210,111 +196,89 @@ struct ProfileView: View {
                 .padding(.horizontal, 16)
 
             ForEach(Array(todos.enumerated()), id: \.element.id) { index, item in
-                todoRow(item: item, index: index)
-            }
+                HStack(alignment: .top, spacing: 12) {
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            todos[index].isCompleted.toggle()
+                        }
+                    } label: {
+                        ZStack {
+                            Circle().strokeBorder(item.isCompleted ? Color.amberWarm : Color.amberSecondaryText, lineWidth: 1.5).frame(width: 22, height: 22)
+                            if item.isCompleted { Circle().fill(Color.amberWarm).frame(width: 14, height: 14) }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 2)
 
-            // Add action button
-            Button(action: {}) {
-                HStack(spacing: 10) {
-                    Circle()
-                        .strokeBorder(Color.amberSecondaryText, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                        .frame(width: 22, height: 22)
-
-                    Text("Add")
-                        .font(.amberBody)
-                        .foregroundStyle(Color.amberSecondaryText)
-
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(item.title)
+                            .font(.amberBody)
+                            .foregroundStyle(item.isCompleted ? Color.amberSecondaryText : Color.amberText)
+                            .strikethrough(item.isCompleted, color: Color.amberSecondaryText)
+                        Text(item.context)
+                            .font(.amberCaption)
+                            .foregroundStyle(Color.amberSecondaryText)
+                    }
                     Spacer()
+                    if let initials = item.linkedInitials {
+                        ZStack {
+                            Circle().fill(Color.amberSurface).frame(width: 28, height: 28)
+                            Text(initials).font(.system(size: 10, weight: .bold)).foregroundStyle(Color.amberSecondaryText)
+                        }
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
                 .amberCardStyle()
                 .padding(.horizontal, 16)
             }
-            .buttonStyle(.plain)
         }
         .padding(.top, 16)
     }
 
-    private func todoRow(item: TodoItem, index: Int) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            // Checkbox
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    todos[index].isCompleted.toggle()
-                }
-            } label: {
-                ZStack {
-                    Circle()
-                        .strokeBorder(item.isCompleted ? Color.amberWarm : Color.amberSecondaryText, lineWidth: 1.5)
-                        .frame(width: 22, height: 22)
-
-                    if item.isCompleted {
-                        Circle()
-                            .fill(Color.amberWarm)
-                            .frame(width: 14, height: 14)
-                    }
-                }
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 2)
-
-            // Title and context
-            VStack(alignment: .leading, spacing: 3) {
-                Text(item.title)
-                    .font(.amberBody)
-                    .foregroundStyle(item.isCompleted ? Color.amberSecondaryText : Color.amberText)
-                    .strikethrough(item.isCompleted, color: Color.amberSecondaryText)
-
-                Text(item.context)
-                    .font(.amberCaption)
-                    .foregroundStyle(Color.amberSecondaryText)
-            }
-
-            Spacer()
-
-            // Linked person avatar
-            if let initials = item.linkedInitials {
-                ZStack {
-                    Circle()
-                        .fill(Color.amberSurface)
-                        .frame(width: 28, height: 28)
-
-                    Text(initials)
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(Color.amberSecondaryText)
-                }
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .amberCardStyle()
-        .padding(.horizontal, 16)
-    }
-
-    // MARK: - About
+    // MARK: - About (Health, Personality, Integrations)
 
     private var aboutView: some View {
         VStack(spacing: 24) {
+            // Health Data
             VStack(alignment: .leading, spacing: 0) {
-                Text("Personal")
+                Text("Health")
+                    .amberSectionHeader()
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 12)
+
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    healthStat(icon: "flame.fill", value: String(format: "%.0f%%", viewModel.moveProgress * 100), label: "Move", color: .healthPhysical)
+                    healthStat(icon: "figure.run", value: String(format: "%.0f%%", viewModel.exerciseProgress * 100), label: "Exercise", color: .healthEmotional)
+                    healthStat(icon: "figure.stand", value: String(format: "%.0f%%", viewModel.standProgress * 100), label: "Stand", color: .healthSocial)
+                    healthStat(icon: "moon.fill", value: String(format: "%.1fh", viewModel.sleepHours), label: "Sleep", color: .healthSpiritual)
+                    healthStat(icon: "iphone", value: String(format: "%.1fh", viewModel.screenTimeHours), label: "Screen", color: .amberWarm)
+                    healthStat(icon: "heart.fill", value: "62", label: "Heart", color: .healthEmotional)
+                }
+                .padding(12)
+                .liquidGlassCard()
+                .padding(.horizontal, 16)
+            }
+
+            // Personality
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Personality")
                     .amberSectionHeader()
                     .padding(.horizontal, 16)
                     .padding(.bottom, 12)
 
                 VStack(spacing: 0) {
-                    aboutRow(label: "Birthday", value: "Jun 15")
+                    aboutRow(label: "Zodiac", value: viewModel.user.zodiacSun?.rawValue ?? "—")
                     aboutDivider()
-                    aboutRow(label: "Zodiac", value: "Gemini \u{264A}")
+                    aboutRow(label: "MBTI", value: viewModel.user.myersBriggs?.rawValue ?? "—")
                     aboutDivider()
-                    aboutRow(label: "MBTI", value: "ENTJ")
-                    aboutDivider()
-                    aboutRow(label: "Enneagram", value: "Type 3")
+                    aboutRow(label: "Enneagram", value: viewModel.user.enneagram?.rawValue ?? "—")
                 }
-                .amberCardStyle()
+                .liquidGlassCard()
                 .padding(.horizontal, 16)
             }
 
+            // Connected Apps
             VStack(alignment: .leading, spacing: 0) {
                 Text("Connected Apps")
                     .amberSectionHeader()
@@ -330,10 +294,11 @@ struct ProfileView: View {
                     aboutDivider()
                     connectedAppRow(name: "Spotify", icon: "music.note", color: .healthSpiritual, isConnected: false)
                 }
-                .amberCardStyle()
+                .liquidGlassCard()
                 .padding(.horizontal, 16)
             }
 
+            // Sign Out
             Button {
                 authViewModel.logout()
             } label: {
@@ -343,10 +308,7 @@ struct ProfileView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 48)
                     .background(Color.amberCard, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .strokeBorder(Color.amberError.opacity(0.2), lineWidth: 0.5)
-                    )
+                    .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).strokeBorder(Color.amberError.opacity(0.2), lineWidth: 0.5))
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)
@@ -354,17 +316,30 @@ struct ProfileView: View {
         .padding(.top, 20)
     }
 
+    private func healthStat(icon: String, value: String, label: String, color: Color) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(color)
+            Text(value)
+                .font(.amberTitle3)
+                .bold()
+                .foregroundStyle(Color.amberText)
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+            Text(label)
+                .font(.amberCaption)
+                .foregroundStyle(Color.amberSecondaryText)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+    }
+
     private func aboutRow(label: String, value: String) -> some View {
         HStack {
-            Text(label)
-                .font(.amberSubheadline)
-                .foregroundStyle(Color.amberSecondaryText)
-
+            Text(label).font(.amberSubheadline).foregroundStyle(Color.amberSecondaryText)
             Spacer()
-
-            Text(value)
-                .font(.amberSubheadline)
-                .foregroundStyle(Color.amberText)
+            Text(value).font(.amberSubheadline).foregroundStyle(Color.amberText)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 13)
@@ -372,88 +347,35 @@ struct ProfileView: View {
 
     private func connectedAppRow(name: String, icon: String, color: Color, isConnected: Bool) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(color)
-                .frame(width: 28, height: 28)
-
-            Text(name)
-                .font(.amberSubheadline)
-                .foregroundStyle(Color.amberText)
-
+            Image(systemName: icon).font(.system(size: 16, weight: .medium)).foregroundStyle(color).frame(width: 28, height: 28)
+            Text(name).font(.amberSubheadline).foregroundStyle(Color.amberText)
             Spacer()
-
-            Toggle("", isOn: .constant(isConnected))
-                .labelsHidden()
-                .tint(.amberWarm)
+            Toggle("", isOn: .constant(isConnected)).labelsHidden().tint(.amberWarm)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
     }
 
     private func aboutDivider() -> some View {
-        Rectangle()
-            .fill(Color.white.opacity(0.04))
-            .frame(height: 0.5)
-            .padding(.leading, 16)
+        Rectangle().fill(Color.white.opacity(0.04)).frame(height: 0.5).padding(.leading, 16)
     }
 }
 
 // MARK: - Supporting Types
 
 private enum ProfileContentTab: String, CaseIterable, Identifiable {
-    case moments, todos, about
+    case photos, todos, about
 
     var id: String { rawValue }
 
     var icon: String {
         switch self {
-        case .moments: return "square.grid.2x2.fill"
-        case .todos:   return "checklist"
-        case .about:   return "info.circle.fill"
+        case .photos: return "square.grid.2x2.fill"
+        case .todos:  return "checklist"
+        case .about:  return "info.circle.fill"
         }
     }
 }
-
-private struct ProfileTimelineEvent: Identifiable {
-    let id = UUID()
-    let monthAbbrev: String
-    let day: String
-    let title: String
-    let description: String
-    let people: [String]
-    let tags: [String]
-
-    static let samples: [ProfileTimelineEvent] = [
-        .init(monthAbbrev: "Mar", day: "24",
-              title: "Coffee chat with Angela",
-              description: "Talked about Amber product strategy at Verve",
-              people: ["AT", "ST"],
-              tags: ["product", "amber"]),
-        .init(monthAbbrev: "Mar", day: "20",
-              title: "MAYA Biotech meeting",
-              description: "Sprint review, planned next release",
-              people: ["ST", "JL", "MR"],
-              tags: ["work", "sprint"]),
-        .init(monthAbbrev: "Mar", day: "15",
-              title: "Family video call",
-              description: "Talked about India trip in May",
-              people: ["CT", "UT", "SiT"],
-              tags: ["family"]),
-        .init(monthAbbrev: "Mar", day: "10",
-              title: "USC volleyball",
-              description: "Met Michelle, great match",
-              people: ["ST", "MK"],
-              tags: ["social", "usc"]),
-        .init(monthAbbrev: "Mar", day: "5",
-              title: "Trip to SF",
-              description: "Class trip, visited Anthropic office",
-              people: ["ST", "RK", "NP"],
-              tags: ["travel", "usc"]),
-    ]
-}
-
-// MARK: - Preview
 
 #Preview {
     ProfileView()

@@ -52,8 +52,8 @@ final class HealthKitService: ObservableObject {
     func ingestSnapshot() async -> HealthSnapshot? {
         guard isAvailable else { return nil }
         let now = Date()
-        let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: now)!
-        let sevenDaysAgo  = Calendar.current.date(byAdding: .day,  value: -7,  to: now)!
+        guard let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: now),
+              let sevenDaysAgo = Calendar.current.date(byAdding: .day, value: -7, to: now) else { return nil }
 
         async let steps   = sumQuantity(.stepCount, from: thirtyDaysAgo, to: now, unit: .count())
         async let energy  = sumQuantity(.activeEnergyBurned, from: thirtyDaysAgo, to: now, unit: .kilocalorie())
@@ -126,7 +126,7 @@ final class HealthKitService: ObservableObject {
                 // Only count asleep/core/deep/REM stages
                 let asleepValues: Set<HKCategoryValueSleepAnalysis> = [.asleepUnspecified, .asleepCore, .asleepDeep, .asleepREM]
                 let totalSeconds = samples
-                    .filter { asleepValues.contains(HKCategoryValueSleepAnalysis(rawValue: $0.value)!) }
+                    .filter { guard let val = HKCategoryValueSleepAnalysis(rawValue: $0.value) else { return false }; return asleepValues.contains(val) }
                     .map { $0.endDate.timeIntervalSince($0.startDate) }
                     .reduce(0, +)
                 let days = max(1, Calendar.current.dateComponents([.day], from: start, to: end).day ?? 7)

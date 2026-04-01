@@ -90,8 +90,6 @@ final class APIClient {
         var request = try buildRequest(method: "POST", path: path)
         if let body {
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        } else {
-            request.httpBody = try JSONSerialization.data(withJSONObject: [:] as [String: Any])
         }
         return try await execute(request)
     }
