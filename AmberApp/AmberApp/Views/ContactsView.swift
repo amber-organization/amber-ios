@@ -29,29 +29,13 @@ struct ContactsView: View {
                     } else {
                         ContactsListView(
                             viewModel: viewModel,
-                            storyViewModel: storyViewModel
+                            storyViewModel: storyViewModel,
+                            onAddContact: { showAddContact = true }
                         )
                     }
                 }
             }
-            .navigationTitle("Contacts")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbarBackground(Color.black, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                if viewModel.permission == .authorized {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button { showAddContact = true } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(Color.amberText)
-                                .frame(width: 32, height: 32)
-                                .background(.regularMaterial, in: Circle())
-                                .overlay(Circle().strokeBorder(Color.glassStroke, lineWidth: 0.5))
-                        }
-                    }
-                }
-            }
+            .navigationBarHidden(true)
             .sheet(isPresented: $showAddContact) {
                 AddContactView {
                     Task { await viewModel.refresh() }

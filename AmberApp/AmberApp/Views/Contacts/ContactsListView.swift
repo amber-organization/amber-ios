@@ -12,6 +12,7 @@ import Contacts
 struct ContactsListView: View {
     @ObservedObject var viewModel: ContactsViewModel
     @ObservedObject var storyViewModel: StoryViewModel
+    var onAddContact: () -> Void = {}
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -27,6 +28,27 @@ struct ContactsListView: View {
     private func mainList(proxy: ScrollViewProxy) -> some View {
         ScrollView {
             VStack(spacing: 0) {
+                // Header: title + add button
+                HStack(alignment: .center) {
+                    Text("Contacts")
+                        .font(.system(size: 34, weight: .bold))
+                        .foregroundStyle(Color.amberText)
+
+                    Spacer()
+
+                    Button(action: onAddContact) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(Color.amberText)
+                            .frame(width: 32, height: 32)
+                            .background(.regularMaterial, in: Circle())
+                            .overlay(Circle().strokeBorder(Color.glassStroke, lineWidth: 0.5))
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 12)
+                .padding(.bottom, 16)
+
                 // Stories carousel
                 StoriesCarouselView(viewModel: storyViewModel)
 
