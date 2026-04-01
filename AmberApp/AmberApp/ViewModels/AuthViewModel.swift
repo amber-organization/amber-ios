@@ -151,10 +151,7 @@ class AuthViewModel: ObservableObject {
         error = nil
         Task {
             do {
-                let user = try await privy.oAuth.login(
-                    with: .google,
-                    appUrlScheme: AppConfig.urlScheme
-                )
+                let user = try await privy.oAuth.login(with: .google)
                 let token = try await user.getAccessToken()
                 accessToken = token
                 APIClient.shared.accessToken = token
@@ -176,10 +173,7 @@ class AuthViewModel: ObservableObject {
         error = nil
         Task {
             do {
-                let user = try await privy.oAuth.login(
-                    with: .apple,
-                    appUrlScheme: AppConfig.urlScheme
-                )
+                let user = try await privy.oAuth.login(with: .apple)
                 let token = try await user.getAccessToken()
                 accessToken = token
                 APIClient.shared.accessToken = token
@@ -196,9 +190,7 @@ class AuthViewModel: ObservableObject {
 
     func logout() {
         Task {
-            if let user = await privy?.getUser() {
-                await user.logout()
-            }
+            try? await privy?.logout()
             accessToken = nil
             APIClient.shared.accessToken = nil
             isAuthenticated = false
