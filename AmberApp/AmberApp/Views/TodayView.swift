@@ -2,16 +2,20 @@
 //  TodayView.swift
 //  AmberApp
 //
-//  Calendar/feed view — birthdays, locations, daily info, tasks.
+//  Daily snapshot — calendar, birthdays, schedule, music, friends map.
 //
 
 import SwiftUI
+import MapKit
 
 struct TodayView: View {
     @StateObject private var contactsService = ContactsService()
     @StateObject private var viewModel = AmberIDViewModel()
     @State private var selectedDate = Date()
-    @State private var todos: [TodoItem] = TodoItem.samples
+    @State private var mapRegion = MKCoordinateRegion(
+        center: CLLocationCoordinate2D(latitude: 34.0522, longitude: -118.2437),
+        span: MKCoordinateSpan(latitudeDelta: 0.15, longitudeDelta: 0.15)
+    )
 
     private var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
@@ -35,10 +39,10 @@ struct TodayView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     headerSection
                     calendarStrip
+                    nowPlayingSection
                     birthdaysSection
                     scheduleSection
-                    todosSection
-                    locationSection
+                    findMyFriendsSection
                 }
                 .padding(.top, 16)
                 .padding(.bottom, 120)
@@ -264,86 +268,148 @@ struct TodayView: View {
         }
     }
 
-    // MARK: - Todos
+    // MARK: - Now Playing (Apple Music)
 
-    private var todosSection: some View {
+    private var nowPlayingSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Today's Actions")
+            Text("Now Playing")
                 .amberSectionHeader()
                 .padding(.horizontal, 20)
 
-            ForEach(Array(todos.enumerated()), id: \.element.id) { index, item in
-                HStack(alignment: .top, spacing: 12) {
-                    Button {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            todos[index].isCompleted.toggle()
-                        }
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .strokeBorder(item.isCompleted ? Color.amberWarm : Color.amberSecondaryText, lineWidth: 1.5)
-                                .frame(width: 22, height: 22)
-                            if item.isCompleted {
-                                Circle().fill(Color.amberWarm).frame(width: 14, height: 14)
-                            }
-                        }
+            HStack(spacing: 14) {
+                // Album art placeholder
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.amberWarm.opacity(0.6), Color.healthSocial.opacity(0.4)],
+                            startPoint: .topLeading, endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 56, height: 56)
+                    .overlay {
+                        Image(systemName: "music.note")
+                            .font(.system(size: 22, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.9))
                     }
-                    .buttonStyle(.plain)
-                    .padding(.top, 2)
 
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(item.title)
-                            .font(.amberBody)
-                            .foregroundStyle(item.isCompleted ? Color.amberSecondaryText : Color.amberText)
-                            .strikethrough(item.isCompleted, color: Color.amberSecondaryText)
-                        Text(item.context)
-                            .font(.amberCaption)
-                            .foregroundStyle(Color.amberSecondaryText)
-                    }
-                    Spacer()
-
-                    if let initials = item.linkedInitials {
-                        ZStack {
-                            Circle().fill(Color.amberSurface).frame(width: 28, height: 28)
-                            Text(initials)
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(Color.amberSecondaryText)
-                        }
-                    }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Not Playing")
+                        .font(.amberBody)
+                        .foregroundStyle(Color.amberText)
+                    Text("Open Apple Music to start listening")
+                        .font(.amberCaption)
+                        .foregroundStyle(Color.amberSecondaryText)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-                .amberCardStyle()
-                .padding(.horizontal, 16)
+                Spacer()
+
+                // Playback controls
+                HStack(spacing: 16) {
+                    Image(systemName: "backward.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.amberSecondaryText)
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 18))
+                        .foregroundStyle(Color.amberWarm)
+                    Image(systemName: "forward.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color.amberSecondaryText)
+                }
             }
+            .padding(14)
+            .liquidGlassCard()
+            .padding(.horizontal, 16)
         }
     }
 
-    // MARK: - Location
+    // MARK: - Find My Friends Map
 
-    private var locationSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Location")
-                .amberSectionHeader()
-                .padding(.horizontal, 20)
+    private struct FriendLocation: Identifiable {
+        let id = UUID()
+        let name: String
+        let initials: String
+        let lat: Double
+        let lng: Double
+        let status: String
+    }
 
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 10) {
-                    Image(systemName: "mappin.and.ellipse")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(Color.amberWarm)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Los Angeles, CA")
-                            .font(.amberBody)
-                            .foregroundStyle(Color.amberText)
-                        Text("Since 9:42 AM")
-                            .font(.amberCaption)
-                            .foregroundStyle(Color.amberSecondaryText)
+    private let friendLocations: [FriendLocation] = [
+        FriendLocation(name: "Angela Chen", initials: "AC", lat: 34.0195, lng: -118.4912, status: "Santa Monica"),
+        FriendLocation(name: "Kaitlyn Lee", initials: "KL", lat: 34.0689, lng: -118.4452, status: "Beverly Hills"),
+        FriendLocation(name: "Reem Khan", initials: "RK", lat: 34.0407, lng: -118.2468, status: "Downtown LA"),
+        FriendLocation(name: "Matthew Kim", initials: "MK", lat: 34.0259, lng: -118.3963, status: "Culver City"),
+    ]
+
+    private var findMyFriendsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Friends Nearby")
+                    .amberSectionHeader()
+                Spacer()
+                Text("\(friendLocations.count) active")
+                    .font(.amberCaption2)
+                    .foregroundStyle(Color.amberWarm)
+            }
+            .padding(.horizontal, 20)
+
+            VStack(spacing: 0) {
+                // Map
+                Map(coordinateRegion: .constant(mapRegion), annotationItems: friendLocations, annotationContent: { friend in
+                    MapAnnotation(coordinate: CLLocationCoordinate2D(latitude: friend.lat, longitude: friend.lng)) {
+                        VStack(spacing: 2) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.amberWarm)
+                                    .frame(width: 32, height: 32)
+                                    .shadow(color: Color.amberWarm.opacity(0.5), radius: 6)
+                                Text(friend.initials)
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(.white)
+                            }
+                            Text(friend.name.split(separator: " ").first.map(String.init) ?? "")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 1)
+                                .background(Color.black.opacity(0.6), in: Capsule())
+                        }
                     }
-                    Spacer()
+                })
+                .frame(height: 200)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .allowsHitTesting(true)
+
+                // Friend list below map
+                VStack(spacing: 0) {
+                    ForEach(Array(friendLocations.enumerated()), id: \.offset) { index, friend in
+                        HStack(spacing: 12) {
+                            ZStack {
+                                Circle().fill(Color.amberWarm.opacity(0.2)).frame(width: 36, height: 36)
+                                Text(friend.initials)
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundStyle(Color.amberWarm)
+                            }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(friend.name)
+                                    .font(.amberCaption)
+                                    .foregroundStyle(Color.amberText)
+                                Text(friend.status)
+                                    .font(.amberCaption2)
+                                    .foregroundStyle(Color.amberSecondaryText)
+                            }
+                            Spacer()
+                            Image(systemName: "location.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color.amberWarm)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+
+                        if index < friendLocations.count - 1 {
+                            Color.glassStroke.frame(height: 0.5).padding(.leading, 62)
+                        }
+                    }
                 }
             }
-            .padding(16)
             .liquidGlassCard()
             .padding(.horizontal, 16)
         }
