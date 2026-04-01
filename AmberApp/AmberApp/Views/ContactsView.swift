@@ -3,13 +3,14 @@
 //  AmberApp
 //
 //  Root Contacts tab — handles permission states and delegates
-//  to ContactsListView for the actual list.
+//  to ContactsListView for the actual list. Includes stories carousel.
 //
 
 import SwiftUI
 
 struct ContactsView: View {
     @StateObject private var viewModel = ContactsViewModel()
+    @StateObject private var storyViewModel = StoryViewModel()
 
     var body: some View {
         NavigationStack {
@@ -25,7 +26,10 @@ struct ContactsView: View {
                     if viewModel.isLoading && viewModel.totalCount == 0 {
                         loadingView
                     } else {
-                        ContactsListView(viewModel: viewModel)
+                        ContactsListView(
+                            viewModel: viewModel,
+                            storyViewModel: storyViewModel
+                        )
                     }
                 }
             }
@@ -37,6 +41,11 @@ struct ContactsView: View {
         .preferredColorScheme(.dark)
         .task {
             await viewModel.loadContacts()
+        }
+        .fullScreenCover(isPresented: $storyViewModel.isShowingStory) {
+            if let idx = storyViewModel.selectedStoryIndex {
+                StoryCardView(viewModel: storyViewModel, startIndex: idx)
+            }
         }
     }
 

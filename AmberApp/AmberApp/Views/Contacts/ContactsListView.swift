@@ -2,8 +2,8 @@
 //  ContactsListView.swift
 //  AmberApp
 //
-//  Apple Contacts-style alphabetical list with section index,
-//  search bar, contact count footer, and pull-to-refresh.
+//  Apple Contacts-style alphabetical list with stories carousel,
+//  section index, search bar, contact count footer, and pull-to-refresh.
 //
 
 import SwiftUI
@@ -11,6 +11,7 @@ import Contacts
 
 struct ContactsListView: View {
     @ObservedObject var viewModel: ContactsViewModel
+    @ObservedObject var storyViewModel: StoryViewModel
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -26,6 +27,15 @@ struct ContactsListView: View {
     private func mainList(proxy: ScrollViewProxy) -> some View {
         ScrollView {
             VStack(spacing: 0) {
+                // Stories carousel
+                StoriesCarouselView(viewModel: storyViewModel)
+
+                // Divider
+                Color.glassStroke
+                    .frame(height: 0.5)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 4)
+
                 // Search bar
                 LiquidGlassSearchBar(
                     searchText: $viewModel.searchText,
@@ -118,10 +128,8 @@ struct ContactRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Avatar
             contactAvatar
 
-            // Name & organization
             VStack(alignment: .leading, spacing: 2) {
                 Text(contact.fullName)
                     .font(.amberBody)
