@@ -2,8 +2,7 @@
 //  MessagingView.swift
 //  AmberApp
 //
-//  Minimal dark messaging view — search bar, status bubbles,
-//  Circles + Other sections in liquid glass cards.
+//  Three-section messaging: Communities, Channels, Direct Messages.
 //
 
 import SwiftUI
@@ -25,56 +24,14 @@ struct Conversation: Identifiable {
 
 struct MessagingView: View {
     @State private var showCompose = false
-    @State private var searchText = ""
-
-    private var filteredCircles: [Conversation] {
-        guard !searchText.isEmpty else { return circleData }
-        let q = searchText.lowercased()
-        return circleData.filter {
-            $0.name.lowercased().contains(q) || $0.lastMessage.lowercased().contains(q)
-        }
-    }
-
-    private var filteredOther: [Conversation] {
-        guard !searchText.isEmpty else { return otherData }
-        let q = searchText.lowercased()
-        return otherData.filter {
-            $0.name.lowercased().contains(q) || $0.lastMessage.lowercased().contains(q)
-        }
-    }
 
     var body: some View {
         NavigationStack {
             ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 20) {
-                    // Search bar
-                    searchBar
-
-                    // Status bubbles
-                    StatusRowView(statuses: StatusNote.samples) {
-                        print("[StatusNote] Your note tapped — compose sheet TBD")
-                    }
-
-                    // Conversation sections
-                    if !filteredCircles.isEmpty {
-                        circlesSection
-                    }
-                    if !filteredOther.isEmpty {
-                        otherSection
-                    }
-
-                    // Empty state when search yields nothing
-                    if filteredCircles.isEmpty && filteredOther.isEmpty && !searchText.isEmpty {
-                        VStack(spacing: 10) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 32, weight: .light))
-                                .foregroundStyle(Color.amberTertiaryText)
-                            Text("No conversations found")
-                                .font(.amberCaption)
-                                .foregroundStyle(Color.amberSecondaryText)
-                        }
-                        .padding(.top, 40)
-                    }
+                VStack(spacing: 24) {
+                    communitiesSection
+                    channelsSection
+                    directMessagesSection
                 }
                 .padding(.top, 8)
                 .padding(.bottom, 120)
@@ -106,52 +63,26 @@ struct MessagingView: View {
         .preferredColorScheme(.dark)
     }
 
-    // MARK: - Search Bar
+    // MARK: - Communities Section (many-to-many)
 
-    private var searchBar: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(Color.amberSecondaryText)
-
-            TextField("Search", text: $searchText)
-                .font(.system(size: 16))
-                .foregroundStyle(Color.amberText)
-
-            if !searchText.isEmpty {
-                Button { searchText = "" } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 16))
-                        .foregroundStyle(Color.amberSecondaryText)
-                }
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(Color(hex: "1F2C34"), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .padding(.horizontal, 16)
-    }
-
-    // MARK: - Circles Section
-
-    private var circlesSection: some View {
+    private var communitiesSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("CIRCLES")
+            Text("COMMUNITIES")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(Color.amberSecondaryText)
                 .tracking(1)
                 .padding(.horizontal, 20)
 
             VStack(spacing: 0) {
-                ForEach(Array(filteredCircles.enumerated()), id: \.element.id) { index, convo in
+                ForEach(Array(Community.samples.enumerated()), id: \.element.id) { index, community in
                     NavigationLink {
-                        ChatDetailView(conversationName: convo.name, hasAmberAgent: convo.hasAmberAgent)
+                        CommunityDetailView(community: community)
                     } label: {
-                        conversationRow(convo)
+                        communityRow(community)
                     }
                     .buttonStyle(.plain)
 
-                    if index < filteredCircles.count - 1 {
+                    if index < Community.samples.count - 1 {
                         Color.glassStroke
                             .frame(height: 0.5)
                             .padding(.leading, 68)
@@ -163,18 +94,75 @@ struct MessagingView: View {
         }
     }
 
-    // MARK: - Other Section
+    private func communityRow(_ community: Community) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(community.avatarColor)
+                    .frame(width: 44, height: 44)
+                Image(systemName: community.icon)
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(.white)
+            }
 
-    private var otherSection: some View {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(community.name)
+                        .font(.amberBody)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.amberText)
+                        .lineLimit(1)
+
+                    Image(systemName: "hexagon.fill")
+                        .font(.system(size: 8))
+                        .foregroundStyle(Color.amberWarm)
+
+                    Spacer()
+
+                    Text(community.lastActivity)
+                        .font(.amberCaption)
+                        .foregroundStyle(Color.amberSecondaryText)
+                }
+
+                HStack {
+                    Text(community.subGroupPreview)
+                        .font(.amberCaption)
+                        .foregroundStyle(Color.amberSecondaryText)
+                        .lineLimit(1)
+
+                    Spacer()
+
+                    if community.totalUnread > 0 {
+                        Text("\(community.totalUnread)")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(minWidth: 20, minHeight: 20)
+                            .background(Color.amberWarm, in: Circle())
+                    }
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color.amberTertiaryText)
+                }
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .contentShape(Rectangle())
+    }
+
+    // MARK: - Channels Section (one-to-many)
+
+    private var channelsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("OTHER")
+            Text("CHANNELS")
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(Color.amberSecondaryText)
                 .tracking(1)
                 .padding(.horizontal, 20)
 
             VStack(spacing: 0) {
-                ForEach(Array(filteredOther.enumerated()), id: \.element.id) { index, convo in
+                ForEach(Array(channelData.enumerated()), id: \.element.id) { index, convo in
                     NavigationLink {
                         ChatDetailView(conversationName: convo.name, hasAmberAgent: convo.hasAmberAgent)
                     } label: {
@@ -182,7 +170,38 @@ struct MessagingView: View {
                     }
                     .buttonStyle(.plain)
 
-                    if index < filteredOther.count - 1 {
+                    if index < channelData.count - 1 {
+                        Color.glassStroke
+                            .frame(height: 0.5)
+                            .padding(.leading, 68)
+                    }
+                }
+            }
+            .liquidGlassCard()
+            .padding(.horizontal, 16)
+        }
+    }
+
+    // MARK: - Direct Messages Section (one-to-one)
+
+    private var directMessagesSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("DIRECT MESSAGES")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.amberSecondaryText)
+                .tracking(1)
+                .padding(.horizontal, 20)
+
+            VStack(spacing: 0) {
+                ForEach(Array(dmData.enumerated()), id: \.element.id) { index, convo in
+                    NavigationLink {
+                        ChatDetailView(conversationName: convo.name, hasAmberAgent: convo.hasAmberAgent)
+                    } label: {
+                        conversationRow(convo)
+                    }
+                    .buttonStyle(.plain)
+
+                    if index < dmData.count - 1 {
                         Color.glassStroke
                             .frame(height: 0.5)
                             .padding(.leading, 68)
@@ -222,8 +241,8 @@ struct MessagingView: View {
                     }
 
                     if convo.hasAmberAgent {
-                        Image(systemName: "hexagon.fill")
-                            .font(.system(size: 8))
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 10, weight: .semibold))
                             .foregroundStyle(Color.amberWarm)
                     }
 
@@ -288,22 +307,25 @@ struct MessagingView: View {
 
     // MARK: - Sample Data
 
-    private var circleData: [Conversation] {
+    private var channelData: [Conversation] {
         [
-            Conversation(name: "MAYA Biotech", icon: "flask.fill", lastMessage: "lab results came back — let's debrief tmrw", timeAgo: "4m", unreadCount: 3, hasActivity: false, hasAmberAgent: true),
-            Conversation(name: "Delta Gamma Chapter", icon: "shield.fill", lastMessage: "philanthropy event sign-ups due friday", timeAgo: "12m", unreadCount: 7, hasActivity: false, hasAmberAgent: false),
-            Conversation(name: "CS 270 Study Group", icon: "chevron.left.forwardslash.chevron.right", lastMessage: "anyone free to review proofs tonight?", timeAgo: "28m", unreadCount: 2, hasActivity: false, hasAmberAgent: false),
-            Conversation(name: "Angela & Me", icon: "person.fill", lastMessage: "omg yes that sounds perfect", timeAgo: "35m", unreadCount: 1, hasActivity: true, hasAmberAgent: true),
+            Conversation(name: "Club Announcements", icon: "megaphone.fill", lastMessage: "meeting moved to THH 301 this week", timeAgo: "2h", unreadCount: 0, hasActivity: true, hasAmberAgent: false),
+            Conversation(name: "TA Updates — CS 270", icon: "graduationcap.fill", lastMessage: "office hours cancelled tomorrow", timeAgo: "4h", unreadCount: 1, hasActivity: false, hasAmberAgent: false),
+            Conversation(name: "Sigma Chi Exec Board", icon: "crown.fill", lastMessage: "budget proposal due friday", timeAgo: "1d", unreadCount: 0, hasActivity: false, hasAmberAgent: false),
+            Conversation(name: "MAYA Weekly Brief", icon: "doc.text.fill", lastMessage: "sprint 4 recap + Q2 goals", timeAgo: "1d", unreadCount: 0, hasActivity: false, hasAmberAgent: false),
+            Conversation(name: "Campus Safety Alerts", icon: "exclamationmark.shield.fill", lastMessage: "reminder: emergency drill Thursday 2pm", timeAgo: "3d", unreadCount: 0, hasActivity: false, hasAmberAgent: false),
         ]
     }
 
-    private var otherData: [Conversation] {
+    private var dmData: [Conversation] {
         [
+            // Amber AI pinned at top
+            Conversation(name: "Amber AI", icon: "hexagon.fill", lastMessage: "3 birthdays coming up this week!", timeAgo: "now", unreadCount: 1, hasActivity: true, hasAmberAgent: true),
+            Conversation(name: "Angela & Me", icon: "person.fill", lastMessage: "omg yes that sounds perfect", timeAgo: "35m", unreadCount: 1, hasActivity: true, hasAmberAgent: false),
             Conversation(name: "Victor & Me", icon: "person.fill", lastMessage: "see you at the gym at 6", timeAgo: "1h", unreadCount: 0, hasActivity: false, hasAmberAgent: false),
-            Conversation(name: "Club Announcements", icon: "megaphone.fill", lastMessage: "meeting moved to THH 301 this week", timeAgo: "2h", unreadCount: 0, hasActivity: true, hasAmberAgent: true),
-            Conversation(name: "Family", icon: "heart.fill", lastMessage: "call me when you can beta", timeAgo: "3h", unreadCount: 1, hasActivity: false, hasAmberAgent: false),
-            Conversation(name: "Roommates", icon: "house.fill", lastMessage: "who took my oat milk", timeAgo: "5h", unreadCount: 0, hasActivity: false, hasAmberAgent: false),
-            Conversation(name: "Intramural Soccer", icon: "figure.soccer", lastMessage: "game time changed to 4pm", timeAgo: "2d", unreadCount: 0, hasActivity: false, hasAmberAgent: false),
+            Conversation(name: "Mom", icon: "heart.fill", lastMessage: "call me when you can beta", timeAgo: "3h", unreadCount: 1, hasActivity: false, hasAmberAgent: false),
+            Conversation(name: "Dev Kumar", icon: "person.fill", lastMessage: "sent the BMA deck to your email", timeAgo: "5h", unreadCount: 0, hasActivity: false, hasAmberAgent: false),
+            Conversation(name: "Roommate — Roy", icon: "house.fill", lastMessage: "who took my oat milk", timeAgo: "6h", unreadCount: 0, hasActivity: false, hasAmberAgent: false),
         ]
     }
 }

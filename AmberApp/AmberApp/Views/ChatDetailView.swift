@@ -11,6 +11,8 @@ import SwiftUI
 struct ChatDetailView: View {
     let conversationName: String
     let hasAmberAgent: Bool
+    var customSystemPrompt: String? = nil
+    var customGreeting: String? = nil
 
     @StateObject private var claudeService = ClaudeService()
     @State private var messages: [ChatMessage] = []
@@ -197,9 +199,10 @@ struct ChatDetailView: View {
 
     private func addWelcomeMessage() {
         guard messages.isEmpty, hasAmberAgent else { return }
+        let greeting = customGreeting ?? "Hey! I'm Amber, your relationship assistant. How can I help you stay connected today?"
         messages.append(ChatMessage(
             role: .assistant,
-            content: "Hey! I'm Amber, your relationship assistant. How can I help you stay connected today?",
+            content: greeting,
             timestamp: Date()
         ))
     }
@@ -218,7 +221,8 @@ struct ChatDetailView: View {
             do {
                 let response = try await claudeService.sendMessage(
                     history: Array(messages.dropLast()),
-                    userMessage: text
+                    userMessage: text,
+                    systemPrompt: customSystemPrompt
                 )
                 messages.append(ChatMessage(role: .assistant, content: response, timestamp: Date()))
             } catch {

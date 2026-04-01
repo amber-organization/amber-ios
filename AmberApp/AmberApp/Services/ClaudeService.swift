@@ -28,7 +28,7 @@ final class ClaudeService: ObservableObject {
     private let baseURL = "https://api.anthropic.com/v1/messages"
     private let model = "claude-sonnet-4-20250514"
 
-    private let systemPrompt = """
+    static let defaultSystemPrompt = """
     You are Amber, a warm and thoughtful personal relationship assistant. \
     You help users maintain and deepen their connections with friends, family, \
     and colleagues. You remember context about their relationships and offer \
@@ -36,7 +36,7 @@ final class ClaudeService: ObservableObject {
     and conversational.
     """
 
-    func sendMessage(history: [ChatMessage], userMessage: String) async throws -> String {
+    func sendMessage(history: [ChatMessage], userMessage: String, systemPrompt: String? = nil) async throws -> String {
         isResponding = true
         defer { isResponding = false }
 
@@ -58,7 +58,7 @@ final class ClaudeService: ObservableObject {
         let body: [String: Any] = [
             "model": model,
             "max_tokens": 1024,
-            "system": systemPrompt,
+            "system": systemPrompt ?? Self.defaultSystemPrompt,
             "messages": messages,
         ]
 

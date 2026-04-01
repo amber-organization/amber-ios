@@ -34,15 +34,7 @@ struct ContactsListView: View {
                 Color.glassStroke
                     .frame(height: 0.5)
                     .padding(.horizontal, 16)
-                    .padding(.bottom, 4)
-
-                // Search bar
-                LiquidGlassSearchBar(
-                    searchText: $viewModel.searchText,
-                    placeholder: "Search"
-                )
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                    .padding(.bottom, 8)
 
                 // Sections
                 LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
