@@ -1,48 +1,64 @@
-# Amber iOS — Code Ownership
-# Requires review from backbone engineers for protected areas
-# Interns own their feature views and can iterate freely
+# Amber iOS — Code Ownership (Sprint 2)
+# =============================================
+# Team: Rytual Health @ amber-organization
+#
+# Backbone Engineers: @sagartiw @matthewkiimm @calebnewtonusc
+# Frontend Engineers: @angelachen-ux (Profile), Kaitlyn (Messages) — pending GitHub handle
+# Designers: @reemkhan1 (Messages design), @raniakhan17 (Profile design)
+#
+# RULE: main requires PR with 1 approval from a backbone engineer.
+# Interns push to their feature branches only.
 
 # ============================================
-# BACKBONE (Sagar, Matthew, Caleb) — Protected
+# BACKBONE — Requires backbone engineer review
 # ============================================
 
 # App entry point and tab architecture
-/AmberApp/AmberApp/AmberApp.swift                          @sagartiwari
-/AmberApp/AmberApp/Components/CustomTabBar.swift           @sagartiwari
+/AmberApp/AmberApp/AmberApp.swift                          @sagartiw @matthewkiimm @calebnewtonusc
+/AmberApp/AmberApp/Components/CustomTabBar.swift           @sagartiw @matthewkiimm @calebnewtonusc
 
 # Auth and onboarding
-/AmberApp/AmberApp/Views/Auth/                             @sagartiwari
-/AmberApp/AmberApp/Views/Onboarding/                       @sagartiwari
-/AmberApp/AmberApp/ViewModels/AuthViewModel.swift          @sagartiwari
-/AmberApp/AmberApp/ViewModels/OnboardingViewModel.swift    @sagartiwari
+/AmberApp/AmberApp/Views/Auth/                             @sagartiw @matthewkiimm
+/AmberApp/AmberApp/Views/Onboarding/                       @sagartiw @matthewkiimm
+/AmberApp/AmberApp/ViewModels/AuthViewModel.swift          @sagartiw
+/AmberApp/AmberApp/ViewModels/OnboardingViewModel.swift    @sagartiw
 
-# ALL services — backend integration layer
-/AmberApp/AmberApp/Services/                               @sagartiwari
+# ALL services — backend integration layer (togari-amber seam)
+/AmberApp/AmberApp/Services/                               @sagartiw @matthewkiimm @calebnewtonusc
 
-# Shared design system
-/AmberApp/AmberApp/Extensions/                             @sagartiwari
-/AmberApp/AmberApp/Components/ContactAvatar.swift          @sagartiwari
-/AmberApp/AmberApp/Components/LiquidGlassSearchBar.swift   @sagartiwari
-/AmberApp/AmberApp/Components/ProfileAvatarButton.swift    @sagartiwari
+# Shared design system and extensions
+/AmberApp/AmberApp/Extensions/                             @sagartiw
+/AmberApp/AmberApp/Components/ContactAvatar.swift          @sagartiw
+/AmberApp/AmberApp/Components/LiquidGlassSearchBar.swift   @sagartiw
+/AmberApp/AmberApp/Components/ProfileAvatarButton.swift    @sagartiw
 
-# Models that multiple features depend on
-/AmberApp/AmberApp/Models/OnboardingModels.swift           @sagartiwari
-/AmberApp/AmberApp/Models/PrivacyTier.swift                @sagartiwari
-/AmberApp/AmberApp/Models/Connection.swift                 @sagartiwari
+# Shared models that multiple features depend on
+/AmberApp/AmberApp/Models/OnboardingModels.swift           @sagartiw
+/AmberApp/AmberApp/Models/PrivacyTier.swift                @sagartiw
+/AmberApp/AmberApp/Models/Connection.swift                 @sagartiw
+/AmberApp/AmberApp/Models/Contact.swift                    @sagartiw
 
-# ============================================
-# KAITLYN — Messages Feature
-# ============================================
-/AmberApp/AmberApp/Views/MessagesView.swift                @kaitlyn-amber
-/AmberApp/AmberApp/Views/MessagingView.swift               @kaitlyn-amber
-/AmberApp/AmberApp/Views/ChatDetailView.swift              @kaitlyn-amber
-/AmberApp/AmberApp/Views/Messages/                         @kaitlyn-amber
+# CI/CD and repo config
+/.github/                                                  @sagartiw
 
 # ============================================
-# ANGELA — Profile Feature
+# ANGELA — Profile Feature (angela/feat/profile)
+# Paired with: @raniakhan17 (design)
 # ============================================
-/AmberApp/AmberApp/Views/ProfileView.swift                 @angela-amber
-/AmberApp/AmberApp/Views/Profile/                          @angela-amber
-/AmberApp/AmberApp/Views/AmberIDView.swift                 @angela-amber
-/AmberApp/AmberApp/Views/SettingsView.swift                @angela-amber
-/AmberApp/AmberApp/Views/Stories/                          @angela-amber
+/AmberApp/AmberApp/Views/ProfileView.swift                 @angelachen-ux
+/AmberApp/AmberApp/Views/Profile/                          @angelachen-ux
+/AmberApp/AmberApp/Views/AmberIDView.swift                 @angelachen-ux
+/AmberApp/AmberApp/Views/SettingsView.swift                @angelachen-ux
+/AmberApp/AmberApp/Views/Stories/                          @angelachen-ux
+/AmberApp/AmberApp/ViewModels/AmberIDViewModel.swift       @angelachen-ux
+/AmberApp/AmberApp/ViewModels/DigestChatViewModel.swift    @angelachen-ux
+
+# ============================================
+# KAITLYN — Messages Feature (kaitlyn/feat/messages)
+# Paired with: @reemkhan1 (design)
+# NOTE: Update with Kaitlyn's GitHub handle once she accepts org invite
+# ============================================
+# /AmberApp/AmberApp/Views/MessagesView.swift              @kaitlyn-handle-tbd
+# /AmberApp/AmberApp/Views/MessagingView.swift             @kaitlyn-handle-tbd
+# /AmberApp/AmberApp/Views/ChatDetailView.swift            @kaitlyn-handle-tbd
+# /AmberApp/AmberApp/Views/Messages/                       @kaitlyn-handle-tbd
