@@ -70,7 +70,6 @@ struct ContentView: View {
     @State private var selectedTab = 2
     @State private var isSearchExpanded = false
     @State private var searchText = ""
-    @FocusState private var searchFocused: Bool
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -100,8 +99,7 @@ struct ContentView: View {
             CustomTabBar(
                 selectedTab: $selectedTab,
                 isSearchExpanded: $isSearchExpanded,
-                searchText: $searchText,
-                searchFocused: $searchFocused
+                searchText: $searchText
             )
             .ignoresSafeArea(.keyboard)
             .zIndex(2)

@@ -14,7 +14,8 @@ struct CustomTabBar: View {
     @Binding var selectedTab: Int
     @Binding var isSearchExpanded: Bool
     @Binding var searchText: String
-    @FocusState.Binding var searchFocused: Bool
+    var onSearchExpand: () -> Void = {}
+    @FocusState private var searchFocused: Bool
     @Namespace private var highlight
 
     private let tabs: [(icon: String, iconActive: String, label: String)] = [
@@ -103,10 +104,10 @@ struct CustomTabBar: View {
             .shadow(color: .black.opacity(0.45), radius: 24, y: 8)
 
             Button {
+                searchFocused = false
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
                     searchText = ""
                     isSearchExpanded = false
-                    searchFocused = false
                 }
             } label: {
                 Text("Cancel")
@@ -181,10 +182,10 @@ struct CustomTabBar: View {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
                 isSearchExpanded = true
             }
-            // Slight delay so the text field appears before focusing
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 searchFocused = true
             }
+            onSearchExpand()
         } label: {
             ZStack {
                 Image(systemName: "magnifyingglass")
