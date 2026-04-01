@@ -2,8 +2,9 @@
 //  ContactsService.swift
 //  AmberApp
 //
-//  CNContactStore wrapper — fetches device contacts on a background thread,
-//  handles all 3 permission states, caches results.
+//  Lightweight CNContactStore wrapper used by SearchView, TodayView,
+//  and any view that needs quick access to device contacts.
+//  The Contacts tab uses ContactsViewModel directly instead.
 //
 
 import SwiftUI
@@ -23,84 +24,43 @@ enum ContactsPermission {
 @MainActor
 final class ContactsService: ObservableObject {
     @Published var contacts: [CNContact] = []
-    @Published var permission: ContactsPermission = .notDetermined
+    @Published var isAuthorized = false
     @Published var isLoading = false
-
-    /// Convenience — kept for backward compat with views that check this.
-    var isAuthorized: Bool { permission == .authorized }
 
     private let store = CNContactStore()
 
-    static let defaultKeysToFetch: [CNKeyDescriptor] = [
-        CNContactGivenNameKey as CNKeyDescriptor,
-        CNContactFamilyNameKey as CNKeyDescriptor,
-        CNContactPhoneNumbersKey as CNKeyDescriptor,
-        CNContactEmailAddressesKey as CNKeyDescriptor,
-        CNContactImageDataAvailableKey as CNKeyDescriptor,
-        CNContactThumbnailImageDataKey as CNKeyDescriptor,
-        CNContactBirthdayKey as CNKeyDescriptor,
-        CNContactOrganizationNameKey as CNKeyDescriptor,
-        CNContactJobTitleKey as CNKeyDescriptor,
-        CNContactPostalAddressesKey as CNKeyDescriptor,
-        CNContactUrlAddressesKey as CNKeyDescriptor,
-        CNContactNoteKey as CNKeyDescriptor,
-        CNContactImageDataKey as CNKeyDescriptor,
-    ]
-
-    init() {
-        syncPermissionState()
-    }
-
-    // MARK: - Permission
-
-    /// Reads the current system authorization status without prompting.
-    func syncPermissionState() {
-        let status = CNContactStore.authorizationStatus(for: .contacts)
-        switch status {
-        case .authorized, .limited:
-            permission = .authorized
-        case .denied, .restricted:
-            permission = .denied
-        case .notDetermined:
-            permission = .notDetermined
-        @unknown default:
-            permission = .notDetermined
-        }
-    }
-
-    /// Prompts the user for contacts access if not yet determined.
-    /// Returns true if authorized after the prompt.
     @discardableResult
     func requestAccess() async -> Bool {
-        // If already determined, just re-sync and return.
-        let status = CNContactStore.authorizationStatus(for: .contacts)
-        if status != .notDetermined {
-            syncPermissionState()
-            return permission == .authorized
-        }
-
         do {
             let granted = try await store.requestAccess(for: .contacts)
-            permission = granted ? .authorized : .denied
+            isAuthorized = granted
             return granted
         } catch {
-            permission = .denied
+            isAuthorized = false
             return false
         }
     }
 
-    // MARK: - Fetching (background thread)
-
-    /// Fetches all contacts on a background thread and updates `contacts` on main.
     func fetchAllContacts() async {
-        guard permission == .authorized else { return }
+        guard isAuthorized else { return }
         isLoading = true
 
-        let keys = Self.defaultKeysToFetch
         let fetched: [CNContact] = await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
+                let keys: [CNKeyDescriptor] = [
+                    CNContactGivenNameKey as CNKeyDescriptor,
+                    CNContactFamilyNameKey as CNKeyDescriptor,
+                    CNContactPhoneNumbersKey as CNKeyDescriptor,
+                    CNContactEmailAddressesKey as CNKeyDescriptor,
+                    CNContactImageDataAvailableKey as CNKeyDescriptor,
+                    CNContactThumbnailImageDataKey as CNKeyDescriptor,
+                    CNContactBirthdayKey as CNKeyDescriptor,
+                    CNContactOrganizationNameKey as CNKeyDescriptor,
+                    CNContactJobTitleKey as CNKeyDescriptor,
+                ]
                 let request = CNContactFetchRequest(keysToFetch: keys)
                 request.sortOrder = .familyName
+
                 var results: [CNContact] = []
                 do {
                     try self.store.enumerateContacts(with: request) { contact, _ in
@@ -116,8 +76,6 @@ final class ContactsService: ObservableObject {
         contacts = fetched
         isLoading = false
     }
-
-    // MARK: - Queries
 
     func contactsWithBirthdayToday() -> [CNContact] {
         let cal = Calendar.current
@@ -159,7 +117,6 @@ extension CNContact {
         return ""
     }
 
-    /// Stable color based on the contact identifier.
     var avatarColor: Color {
         let colors: [Color] = [
             .healthEmotional, .healthSocial, .healthPhysical,
