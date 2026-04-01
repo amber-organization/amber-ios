@@ -2,7 +2,8 @@
 //  AuthViewModel.swift
 //  AmberApp
 //
-//  Created on 2026-03-04.
+//  Phone number (SMS) + OAuth login via Privy.
+//  Every login creates an Amber ID (Solana wallet via Privy).
 //
 
 import SwiftUI
@@ -16,9 +17,9 @@ class AuthViewModel: ObservableObject {
     @Published var error: String?
     @Published var accessToken: String?
 
-    // Email OTP flow state
+    // SMS OTP flow state
     @Published var isAwaitingOTP: Bool = false
-    @Published var pendingEmail: String?
+    @Published var pendingPhone: String?
 
     private var privy: Privy?
     private var authStateTask: Task<Void, Never>?
@@ -46,9 +47,7 @@ class AuthViewModel: ObservableObject {
     private var isDevBypassed = false
 
     #if DEBUG
-    /// Skip auth entirely for development — lets you test onboarding + full app
     func devBypassLogin() {
-        // Cancel the auth state observer so Privy can't override us
         authStateTask?.cancel()
         authStateTask = nil
         isDevBypassed = true
@@ -75,7 +74,7 @@ class AuthViewModel: ObservableObject {
                         APIClient.shared.accessToken = token
                         self.isAuthenticated = true
                     } catch {
-                        self.isAuthenticated = true // still authed, token refresh may retry
+                        self.isAuthenticated = true
                     }
                     self.isLoading = false
                 case .unauthenticated:
@@ -84,7 +83,7 @@ class AuthViewModel: ObservableObject {
                     self.isAuthenticated = false
                     self.isLoading = false
                 case .notReady:
-                    break // don't block UI on SDK warmup
+                    break
                 case .authenticatedUnverified:
                     self.isAuthenticated = true
                     self.isLoading = false
@@ -95,10 +94,10 @@ class AuthViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Email OTP Login
+    // MARK: - SMS OTP Login
 
-    /// Step 1: Send OTP code to email
-    func sendEmailCode(to email: String) {
+    /// Step 1: Send OTP code via SMS to phone number
+    func sendSMSCode(to phone: String) {
         guard let privy else {
             self.error = "Authentication service unavailable. Please restart the app."
             return
@@ -107,8 +106,8 @@ class AuthViewModel: ObservableObject {
         error = nil
         Task {
             do {
-                try await privy.email.sendCode(to: email)
-                pendingEmail = email
+                try await privy.sms.sendCode(to: phone)
+                pendingPhone = phone
                 isAwaitingOTP = true
                 isLoading = false
             } catch {
@@ -118,20 +117,20 @@ class AuthViewModel: ObservableObject {
         }
     }
 
-    /// Step 2: Verify OTP and complete login
-    func verifyEmailCode(_ code: String) {
-        guard let privy, let email = pendingEmail else { return }
+    /// Step 2: Verify SMS OTP and complete login → creates Amber ID (Solana wallet)
+    func verifySMSCode(_ code: String) {
+        guard let privy, let phone = pendingPhone else { return }
         isLoading = true
         error = nil
         Task {
             do {
-                let user = try await privy.email.loginWithCode(code, sentTo: email)
+                let user = try await privy.sms.loginWithCode(code, sentTo: phone)
                 let token = try await user.getAccessToken()
                 accessToken = token
                 APIClient.shared.accessToken = token
                 isAuthenticated = true
                 isAwaitingOTP = false
-                pendingEmail = nil
+                pendingPhone = nil
                 isLoading = false
             } catch {
                 self.error = friendlyError(error)
@@ -225,7 +224,6 @@ class AuthViewModel: ObservableObject {
                 isAuthenticated = false
                 isLoading = false
             case .notReady:
-                // Give the stream a moment, then fall through
                 try? await Task.sleep(for: .seconds(2))
                 if isLoading {
                     isAuthenticated = false
@@ -249,7 +247,7 @@ class AuthViewModel: ObservableObject {
             return "App not registered with auth provider. Use \"Skip Login\" below to continue in dev mode."
         }
         if msg.lowercased().contains("cancel") {
-            return "" // user cancelled — no error
+            return ""
         }
         return msg
     }
@@ -262,10 +260,12 @@ enum AppConfig {
     static let privyAppClientId = "client-WY6TPkpcdSAbJ5eBEM3jw6rkpaR2KycrefbJehufX6yXX"
     static let urlScheme = "amberapp"
 
-    // Backend
-    #if DEBUG
-    static let apiBaseURL = "http://localhost:8080"
+    // Backend — no localhost calls in simulator; only real device hits the API
+    #if DEBUG && targetEnvironment(simulator)
+    static let apiBaseURL: String? = nil  // No backend calls in simulator
+    #elseif DEBUG
+    static let apiBaseURL: String? = "http://localhost:8080"
     #else
-    static let apiBaseURL = "https://amber-app-service-HASH.a.run.app" // TODO: Replace with Cloud Run URL
+    static let apiBaseURL: String? = "https://amber-app-service-HASH.a.run.app" // TODO: Replace with Cloud Run URL
     #endif
 }

@@ -36,7 +36,7 @@ enum APIError: LocalizedError {
 final class APIClient {
     static let shared = APIClient()
 
-    var baseURL: String = AppConfig.apiBaseURL
+    var baseURL: String? = AppConfig.apiBaseURL
     var accessToken: String?
 
     private let session: URLSession
@@ -105,8 +105,8 @@ final class APIClient {
     // MARK: - Request Building
 
     private func buildRequest(method: String, path: String) throws -> URLRequest {
-        guard let url = URL(string: baseURL + path) else {
-            throw APIError.networkError("Invalid URL: \(baseURL + path)")
+        guard let baseURL, let url = URL(string: baseURL + path) else {
+            throw APIError.networkError("No backend configured (simulator mode)")
         }
 
         var request = URLRequest(url: url)
