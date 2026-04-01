@@ -1,0 +1,48 @@
+# Amber iOS — Code Ownership
+# Requires review from backbone engineers for protected areas
+# Interns own their feature views and can iterate freely
+
+# ============================================
+# BACKBONE (Sagar, Matthew, Caleb) — Protected
+# ============================================
+
+# App entry point and tab architecture
+/AmberApp/AmberApp/AmberApp.swift                          @sagartiwari
+/AmberApp/AmberApp/Components/CustomTabBar.swift           @sagartiwari
+
+# Auth and onboarding
+/AmberApp/AmberApp/Views/Auth/                             @sagartiwari
+/AmberApp/AmberApp/Views/Onboarding/                       @sagartiwari
+/AmberApp/AmberApp/ViewModels/AuthViewModel.swift          @sagartiwari
+/AmberApp/AmberApp/ViewModels/OnboardingViewModel.swift    @sagartiwari
+
+# ALL services — backend integration layer
+/AmberApp/AmberApp/Services/                               @sagartiwari
+
+# Shared design system
+/AmberApp/AmberApp/Extensions/                             @sagartiwari
+/AmberApp/AmberApp/Components/ContactAvatar.swift          @sagartiwari
+/AmberApp/AmberApp/Components/LiquidGlassSearchBar.swift   @sagartiwari
+/AmberApp/AmberApp/Components/ProfileAvatarButton.swift    @sagartiwari
+
+# Models that multiple features depend on
+/AmberApp/AmberApp/Models/OnboardingModels.swift           @sagartiwari
+/AmberApp/AmberApp/Models/PrivacyTier.swift                @sagartiwari
+/AmberApp/AmberApp/Models/Connection.swift                 @sagartiwari
+
+# ============================================
+# KAITLYN — Messages Feature
+# ============================================
+/AmberApp/AmberApp/Views/MessagesView.swift                @kaitlyn-amber
+/AmberApp/AmberApp/Views/MessagingView.swift               @kaitlyn-amber
+/AmberApp/AmberApp/Views/ChatDetailView.swift              @kaitlyn-amber
+/AmberApp/AmberApp/Views/Messages/                         @kaitlyn-amber
+
+# ============================================
+# ANGELA — Profile Feature
+# ============================================
+/AmberApp/AmberApp/Views/ProfileView.swift                 @angela-amber
+/AmberApp/AmberApp/Views/Profile/                          @angela-amber
+/AmberApp/AmberApp/Views/AmberIDView.swift                 @angela-amber
+/AmberApp/AmberApp/Views/SettingsView.swift                @angela-amber
+/AmberApp/AmberApp/Views/Stories/                          @angela-amber
