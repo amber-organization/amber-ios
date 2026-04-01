@@ -7,15 +7,12 @@
 
 import SwiftUI
 import MapKit
+import Contacts
 
 struct TodayView: View {
     @StateObject private var contactsService = ContactsService()
     @StateObject private var viewModel = AmberIDViewModel()
     @State private var selectedDate = Date()
-    @State private var mapRegion = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 34.0522, longitude: -118.2437),
-        span: MKCoordinateSpan(latitudeDelta: 0.15, longitudeDelta: 0.15)
-    )
 
     private var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
@@ -353,30 +350,32 @@ struct TodayView: View {
 
             VStack(spacing: 0) {
                 // Map
-                Map(coordinateRegion: .constant(mapRegion), annotationItems: friendLocations, annotationContent: { friend in
-                    MapAnnotation(coordinate: CLLocationCoordinate2D(latitude: friend.lat, longitude: friend.lng)) {
-                        VStack(spacing: 2) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.amberWarm)
-                                    .frame(width: 32, height: 32)
-                                    .shadow(color: Color.amberWarm.opacity(0.5), radius: 6)
-                                Text(friend.initials)
-                                    .font(.system(size: 10, weight: .bold))
+                Map {
+                    ForEach(friendLocations) { friend in
+                        Annotation(friend.name, coordinate: CLLocationCoordinate2D(latitude: friend.lat, longitude: friend.lng)) {
+                            VStack(spacing: 2) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.amberWarm)
+                                        .frame(width: 32, height: 32)
+                                        .shadow(color: Color.amberWarm.opacity(0.5), radius: 6)
+                                    Text(friend.initials)
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundStyle(.white)
+                                }
+                                Text(friend.name.split(separator: " ").first.map(String.init) ?? "")
+                                    .font(.system(size: 9, weight: .semibold))
                                     .foregroundStyle(.white)
+                                    .padding(.horizontal, 4)
+                                    .padding(.vertical, 1)
+                                    .background(Color.black.opacity(0.6), in: Capsule())
                             }
-                            Text(friend.name.split(separator: " ").first.map(String.init) ?? "")
-                                .font(.system(size: 9, weight: .semibold))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 1)
-                                .background(Color.black.opacity(0.6), in: Capsule())
                         }
                     }
-                })
+                }
+                .mapStyle(.standard(pointsOfInterest: .excludingAll))
                 .frame(height: 200)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .allowsHitTesting(true)
 
                 // Friend list below map
                 VStack(spacing: 0) {
