@@ -23,13 +23,27 @@ struct StoryCardView: View {
         self._currentStoryIdx = State(initialValue: startIndex)
     }
 
+    // MARK: - Safe Accessors
+
     private var currentStory: StoryItem {
-        viewModel.stories[currentStoryIdx]
+        let idx = min(currentStoryIdx, viewModel.stories.count - 1)
+        guard idx >= 0 else { return StoryItem.fallback }
+        return viewModel.stories[idx]
+    }
+
+    private var safeCardIdx: Int {
+        let cards = currentStory.cards
+        guard !cards.isEmpty else { return 0 }
+        return min(max(currentCardIdx, 0), cards.count - 1)
     }
 
     private var currentCard: StorySlide {
-        currentStory.cards[currentCardIdx]
+        let cards = currentStory.cards
+        guard !cards.isEmpty else { return StorySlide.fallback }
+        return cards[safeCardIdx]
     }
+
+    // MARK: - Body
 
     var body: some View {
         ZStack {
@@ -55,17 +69,10 @@ struct StoryCardView: View {
 
             // Content
             VStack(spacing: 0) {
-                // Progress bar + close button
                 topBar
-
                 Spacer()
-
-                // Title + items
                 cardContent
-
                 Spacer()
-
-                // Action buttons
                 bottomBar
             }
 
@@ -83,13 +90,24 @@ struct StoryCardView: View {
         .gesture(swipeGesture)
         .offset(x: dragOffset)
         .onChange(of: currentStoryIdx) {
-            currentCardIdx = 0
+            clampIndices()
             viewModel.markViewed(currentStory.id)
         }
         .onAppear {
+            clampIndices()
             viewModel.markViewed(currentStory.id)
         }
         .statusBarHidden()
+    }
+
+    // MARK: - Clamp
+
+    private func clampIndices() {
+        let storyCount = viewModel.stories.count
+        if currentStoryIdx >= storyCount {
+            currentStoryIdx = max(storyCount - 1, 0)
+        }
+        currentCardIdx = 0
     }
 
     // MARK: - Top Bar (progress + close)
@@ -98,10 +116,13 @@ struct StoryCardView: View {
         VStack(spacing: 12) {
             // Progress segments
             HStack(spacing: 3) {
-                ForEach(0..<currentStory.cards.count, id: \.self) { idx in
-                    Capsule()
-                        .fill(idx <= currentCardIdx ? Color.white : Color.white.opacity(0.3))
-                        .frame(height: 3)
+                let cardCount = currentStory.cards.count
+                if cardCount > 0 {
+                    ForEach(0..<cardCount, id: \.self) { idx in
+                        Capsule()
+                            .fill(idx <= safeCardIdx ? Color.white : Color.white.opacity(0.3))
+                            .frame(height: 3)
+                    }
                 }
             }
             .padding(.horizontal, 16)
@@ -109,7 +130,6 @@ struct StoryCardView: View {
 
             // Contact info + close
             HStack(spacing: 10) {
-                // Avatar
                 ZStack {
                     Circle()
                         .fill(currentStory.avatarColor)
@@ -141,17 +161,14 @@ struct StoryCardView: View {
 
     private var cardContent: some View {
         VStack(alignment: .leading, spacing: 32) {
-            // Title
             Text(currentCard.title)
                 .font(.system(size: 28, weight: .bold, design: .default))
                 .foregroundStyle(.black.opacity(0.85))
                 .multilineTextAlignment(.leading)
 
-            // Numbered items
             VStack(alignment: .leading, spacing: 20) {
                 ForEach(Array(currentCard.items.enumerated()), id: \.offset) { idx, item in
                     HStack(alignment: .top, spacing: 14) {
-                        // Number badge
                         ZStack {
                             Circle()
                                 .fill(.black.opacity(0.7))
@@ -176,7 +193,6 @@ struct StoryCardView: View {
 
     private var bottomBar: some View {
         HStack {
-            // Rate button
             Button {} label: {
                 VStack(spacing: 4) {
                     Image(systemName: "face.smiling")
@@ -189,7 +205,6 @@ struct StoryCardView: View {
 
             Spacer()
 
-            // Share buttons
             HStack(spacing: 12) {
                 shareButton(icon: "camera.fill", label: "IG")
                 shareButton(icon: "person.crop.circle", label: "Share to")
@@ -216,7 +231,10 @@ struct StoryCardView: View {
     // MARK: - Navigation
 
     private func nextCard() {
-        if currentCardIdx < currentStory.cards.count - 1 {
+        let maxIdx = currentStory.cards.count - 1
+        guard maxIdx >= 0 else { nextStory(); return }
+
+        if currentCardIdx < maxIdx {
             withAnimation(.easeInOut(duration: 0.2)) {
                 currentCardIdx += 1
             }
@@ -239,6 +257,7 @@ struct StoryCardView: View {
         if currentStoryIdx < viewModel.stories.count - 1 {
             withAnimation(.easeInOut(duration: 0.25)) {
                 currentStoryIdx += 1
+                currentCardIdx = 0
             }
         } else {
             dismiss()
@@ -249,6 +268,7 @@ struct StoryCardView: View {
         if currentStoryIdx > 0 {
             withAnimation(.easeInOut(duration: 0.25)) {
                 currentStoryIdx -= 1
+                currentCardIdx = 0
             }
         }
     }

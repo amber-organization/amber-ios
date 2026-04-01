@@ -26,6 +26,19 @@ struct StoryItem: Identifiable {
     let cards: [StorySlide]
 }
 
+// MARK: - Fallbacks
+
+extension StorySlide {
+    static let fallback = StorySlide(title: "", items: [], gradientColors: [.amberSurface, .amberCard])
+}
+
+extension StoryItem {
+    static let fallback = StoryItem(
+        contactName: "", contactInitials: "?", avatarColor: .amberSurface,
+        isViewed: true, isYourStory: false, cards: [.fallback]
+    )
+}
+
 // MARK: - Sample Data
 
 extension StoryItem {
