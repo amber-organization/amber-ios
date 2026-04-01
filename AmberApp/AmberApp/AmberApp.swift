@@ -71,26 +71,23 @@ struct ContentView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
+            // Full-bleed background
             Color.black.ignoresSafeArea()
 
+            // Active tab content
             Group {
                 switch selectedTab {
-                case 0:
-                    ContactsView()
-                case 1:
-                    MessagingView()
-                case 2:
-                    TodayView()
-                case 3:
-                    ProfileView()
-                case 4:
-                    SearchView()
-                default:
-                    TodayView()
+                case 0:  ContactsView()
+                case 1:  MessagingView()
+                case 2:  TodayView()
+                case 3:  ProfileView()
+                case 4:  SearchView()
+                default: TodayView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
+            // Floating liquid glass tab bar
             CustomTabBar(selectedTab: $selectedTab)
                 .ignoresSafeArea(.keyboard)
         }
